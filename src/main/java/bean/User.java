@@ -5,6 +5,12 @@ public class User {
     double latitude;
     double longitude;
 
+    public User(int id, double latitude, double longitude) {
+        this.id = id;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
 
     public double getLatitude() {
         return latitude;
