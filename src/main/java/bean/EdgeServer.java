@@ -4,12 +4,12 @@ import java.util.ArrayList;
 
 
 public class EdgeServer {
-    static double coveringRadius = 300;
-    static int MaximumStorageSpace = 6;
-    int id = 20000;
-    double latitude = -1;
-    double longitude = -1;
-    int remainingStorageSpace = -1;
+    double coveringRadius = -1000;
+    int MaximumStorageSpace = -1000;
+    int id = -1000;
+    double latitude = -1000;
+    double longitude = -1000;
+    int remainingStorageSpace = -1000;
     ArrayList<PopularData> cachedDataList;
 
     public int getId() {

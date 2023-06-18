@@ -1,9 +1,9 @@
 package bean;
 
 public class User {
-    int id;
-    double latitude;
-    double longitude;
+    int id = -1000;
+    double latitude = -1000;
+    double longitude = -1000;
 
     public User(int id, double latitude, double longitude) {
         this.id = id;
