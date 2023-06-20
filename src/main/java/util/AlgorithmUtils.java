@@ -42,36 +42,36 @@ public class AlgorithmUtils {
         return distance;
     }
 
-    public static Map<Integer, Map<Integer, Double>> getDataSimilarityMap(Map<Integer,double[]> dataVectorMap) {
-        Map<Integer, ArrayList<Double>> similarDataMap = new HashMap<>();
-        // 遍历每个数据对象
-        for (Map.Entry<Integer, double[]> entry : dataVectorMap.entrySet()) {
-            int dataId = entry.getKey();
-            double[] currentVector = entry.getValue();
-            ArrayList<Double> similarDataList = new ArrayList<>();
-            // 遍历其他数据对象进行相似度计算
-            for (Map.Entry<Integer, double[]> otherEntry : dataVectorMap.entrySet()) {
-                int otherDataId = otherEntry.getKey();
-                double[] otherVector = otherEntry.getValue();
-                if (dataId != otherDataId) {  // 排除当前数据对象自身
-                    double similarity = calculateCosSim(currentVector, otherVector);
-                    if (similarity > 0.5) {
-                        similarDataList.add(otherDataId);
-                    }
-                }
-            }
-            // 根据相似度降序排序并截取前十位
-            similarDataList.sort((a, b) -> Double.compare(calculateCosSim(dataVectorMap.get(dataId), dataVectorMap.get(b)),
-                    calculateCosSim(dataVectorMap.get(dataId), dataVectorMap.get(a))));
-            if (similarDataList.size() > 10) {
-                similarDataList = new ArrayList<>(similarDataList.subList(0, 10));
-            }
-
-            similarDataMap.put(dataId, similarDataList);
-        }
-
-        return similarDataMap;
-    }
+//    public static Map<Integer, Map<Integer, Double>> getDataSimilarityMap(Map<Integer,double[]> dataVectorMap) {
+//        Map<Integer, ArrayList<Double>> similarDataMap = new HashMap<>();
+//        // 遍历每个数据对象
+//        for (Map.Entry<Integer, double[]> entry : dataVectorMap.entrySet()) {
+//            int dataId = entry.getKey();
+//            double[] currentVector = entry.getValue();
+//            ArrayList<Double> similarDataList = new ArrayList<>();
+//            // 遍历其他数据对象进行相似度计算
+//            for (Map.Entry<Integer, double[]> otherEntry : dataVectorMap.entrySet()) {
+//                int otherDataId = otherEntry.getKey();
+//                double[] otherVector = otherEntry.getValue();
+//                if (dataId != otherDataId) {  // 排除当前数据对象自身
+//                    double similarity = calculateCosSim(currentVector, otherVector);
+//                    if (similarity > 0.5) {
+//                        similarDataList.add(otherDataId);
+//                    }
+//                }
+//            }
+//            // 根据相似度降序排序并截取前十位
+//            similarDataList.sort((a, b) -> Double.compare(calculateCosSim(dataVectorMap.get(dataId), dataVectorMap.get(b)),
+//                    calculateCosSim(dataVectorMap.get(dataId), dataVectorMap.get(a))));
+//            if (similarDataList.size() > 10) {
+//                similarDataList = new ArrayList<>(similarDataList.subList(0, 10));
+//            }
+//
+//            similarDataMap.put(dataId, similarDataList);
+//        }
+//
+//        return similarDataMap;
+//    }
 
     private static double calculateCosSim(double[] doubles, double[] doubles1) {
         return 0;
