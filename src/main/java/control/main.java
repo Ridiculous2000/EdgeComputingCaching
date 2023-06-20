@@ -25,7 +25,6 @@ public class main {
 //            timestampList.add(i);
 //        }
 //        generateData.newRequest(timestampList);
-
         //æÿ’Û∑÷Ω‚
 //        OtherUtils.buildRequestMatrix(0,50);
         OurAlgorithm ourAlgorithm = new OurAlgorithm();
