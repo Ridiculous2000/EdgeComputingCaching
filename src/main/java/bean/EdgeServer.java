@@ -1,6 +1,7 @@
 package bean;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 
 public class EdgeServer {
@@ -68,4 +69,16 @@ public class EdgeServer {
         this.coveringRadius = coveringRadius;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof EdgeServer)) return false;
+        EdgeServer that = (EdgeServer) o;
+        return getId() == that.getId();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
 }

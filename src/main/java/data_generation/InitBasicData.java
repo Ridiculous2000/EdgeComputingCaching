@@ -3,11 +3,10 @@ package data_generation;
 import bean.EdgeServer;
 import bean.User;
 import util.FileUtils;
-import util.JDBCUtils;
+import util.DBUtils;
 import util.SqlUtils;
 
 import java.sql.*;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +17,7 @@ public class InitBasicData {
         List<User> userList = readUserCSV("src/eua-dataset/users/users-melbcbd-generated.csv");
         Connection connection = null;
         try {
-            connection = JDBCUtils.getConnection();
+            connection = DBUtils.getConnection();
             Statement stmt = connection.createStatement();
             for(User user:userList){
                 String sql = SqlUtils.generateInsertSQL("basic_user",user);
@@ -37,11 +36,12 @@ public class InitBasicData {
         }
     }
 
+    //添加所有EdgeServer信息到数据库
     public void insertBasicEdgeServer(){
         List<EdgeServer> edgeServerList = readEdgeServerCSV("src/eua-dataset/edge-servers/site-optus-melbCBD.csv");
         Connection connection = null;
         try {
-            connection = JDBCUtils.getConnection();
+            connection = DBUtils.getConnection();
             Statement stmt = connection.createStatement();
             for(EdgeServer edgeServer:edgeServerList){
                 String sql = "INSERT INTO basic_server (id,latitude,longitude) values("+edgeServer.getId()+","+edgeServer.getLatitude()+","+edgeServer.getLongitude()+")";

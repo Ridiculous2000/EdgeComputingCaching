@@ -1,13 +1,15 @@
 package control;
 
+import OurAlgorithm.OurAlgorithm;
 import data_generation.GenerateData;
 import data_generation.InitBasicData;
 import util.OtherUtils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         //读入基本数据
 //        InitBasicData initBasicData = new InitBasicData();
 //        initBasicData.insertBasicUser();
@@ -25,6 +27,9 @@ public class main {
 //        generateData.newRequest(timestampList);
 
         //矩阵分解
-        OtherUtils.buildRequestMatrix(0,50);
+//        OtherUtils.buildRequestMatrix(0,50);
+        OurAlgorithm ourAlgorithm = new OurAlgorithm();
+        ourAlgorithm.InitializeData();
+
     }
 }

@@ -2,14 +2,19 @@ package util;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FileUtils {
 
+
+    public static int maxUserNum = 850;
+    public static int maxDataNum = 400;
+    public static int dataVectorDimension = 10;
     //读取file，“，”拆分后存入 List<String[]>
     public static List<String[]> readCSV(String filePath) {
         List<String[]> dataList = new ArrayList<>();
-
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -56,6 +61,27 @@ public class FileUtils {
             e.printStackTrace();
         }
         return matrixData;
+    }
+
+    // 获取 dataId,vector 的map
+    public static HashMap<Integer,double[]> getDataVectorMap(String filePath,ArrayList<Integer> dataIdList) throws IOException {
+        HashMap<Integer,double[]> dataVectorMap = new HashMap<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            double[][] dataMatrix = new double[maxDataNum][dataVectorDimension];
+            int row = 0;
+            while ((line = reader.readLine()) != null) {
+                String[] values = line.split(",");
+                for (int col = 0; col < values.length; col++) {
+                    dataMatrix[col][row] = Double.parseDouble(values[col].trim());
+                }
+                row++;
+            }
+            for(int dataId:dataIdList){
+                dataVectorMap.put(dataId,dataMatrix[OtherUtils.getIndexById(dataId,"PopularData")]);
+            }
+            return dataVectorMap;
+        }
     }
 
 }

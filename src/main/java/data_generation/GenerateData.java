@@ -1,7 +1,7 @@
 package data_generation;
 
 import bean.*;
-import util.JDBCUtils;
+import util.DBUtils;
 import util.ProbabilityUtils;
 import util.SqlUtils;
 
@@ -19,7 +19,7 @@ public class GenerateData {
         String tableName = "user";
         Connection connection = null;
         try {
-            connection = JDBCUtils.getConnection();
+            connection = DBUtils.getConnection();
             Statement stmt = connection.createStatement();
             //删除之前表中的信息
             String deleteSql = SqlUtils.generateDeleteAllDataSQL(tableName);
@@ -58,7 +58,7 @@ public class GenerateData {
         String tableName = "edge_server";
         Connection connection = null;
         try {
-            connection = JDBCUtils.getConnection();
+            connection = DBUtils.getConnection();
             Statement stmt = connection.createStatement();
             //删除之前表中的信息
             String deleteSql = SqlUtils.generateDeleteAllDataSQL(tableName);
@@ -99,7 +99,7 @@ public class GenerateData {
         String tableName = "popular_data";
         Connection connection = null;
         try {
-            connection = JDBCUtils.getConnection();
+            connection = DBUtils.getConnection();
             Statement stmt = connection.createStatement();
             //删除之前信息
             String deleteSql = SqlUtils.generateDeleteAllDataSQL(tableName);
@@ -136,31 +136,25 @@ public class GenerateData {
         String tableName = "user_data_probability";
         Connection connection = null;
         try {
-            connection = JDBCUtils.getConnection();
+            connection = DBUtils.getConnection();
             Statement stmt = connection.createStatement();
             //删除之前信息
             String deleteSql = SqlUtils.generateDeleteAllDataSQL(tableName);
             stmt.executeUpdate(deleteSql);
             //查询数据表
-            String selectDataSql = SqlUtils.generateSelectSQL("PopularData");
-            ResultSet dataRS = stmt.executeQuery(selectDataSql);
-            List<Integer> rl = new ArrayList<Integer>();
-            while(dataRS.next()){
-                rl.add(dataRS.getInt("id"));
+            List<Integer> dataIdRank = new ArrayList<Integer>();
+            List<PopularData> allPopularData = DBUtils.getAllPopularData();
+            for (PopularData pd:allPopularData){
+                dataIdRank.add(pd.getId());
             }
             //查询用户表
-            String selectUserSql = SqlUtils.generateSelectSQL("user");
-            ResultSet userRS = stmt.executeQuery(selectUserSql);
-            List<Integer> ul = new ArrayList<>();
-            while(userRS.next()){
-                ul.add(userRS.getInt("id"));
-            }
+            List<User> allUserList = DBUtils.getAllUser();
             //为每个用户生成一个随机序列
             HashMap<Integer,ArrayList<Integer>> userPreference = new HashMap<>();
-            for(int uid:ul){
-                Collections.shuffle(rl);
-                ArrayList<Integer> up = new ArrayList<>(rl);
-                userPreference.put(uid,up);
+            for(User u:allUserList){
+                Collections.shuffle(dataIdRank);
+                ArrayList<Integer> up = new ArrayList<>(dataIdRank);
+                userPreference.put(u.getId(),up);
             }
             //根据随机序列与zipF分布生成概率Map
             Map<Integer,Map<Integer,Double>> userDataProbability = new HashMap<Integer,Map<Integer,Double>>();
@@ -195,7 +189,7 @@ public class GenerateData {
         String tableName = "request";
         Connection connection = null;
         try {
-            connection = JDBCUtils.getConnection();
+            connection = DBUtils.getConnection();
             Statement stmt = connection.createStatement();
             //获取概率Map
             String selectServerSql = SqlUtils.generateSelectSQL("UserDataProbability");
