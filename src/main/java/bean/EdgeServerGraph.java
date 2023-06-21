@@ -41,6 +41,7 @@ public class EdgeServerGraph {
         }else{
             System.out.println("不联通");
         }
+        floyd(5);
     }
 
     //返回各个联通分量

@@ -49,22 +49,22 @@ public class BaseRandom {
         }
     }
     //进行实验返回的是<时间戳，<用户id，时延>>
-    public Map<Integer,Map<Integer,Integer>> experiment(int beginTimestamp,int endTimestamp)throws IOException{
-        List<Integer> timePeriod=new ArrayList<Integer>();
-        for(int i=beginTimestamp;i<=endTimestamp;i++){
-            timePeriod.add(i);
-        }
-        Map<Integer,Map<Integer,Integer>> userLatency=new HashMap<Integer,Map<Integer,Integer>>();
-        for(Integer time:timePeriod){
-            for(EdgeServer edgeServer:experimentalEdgeServer){
-                for(Request rq:predictiveRequest){
-                    int serverId=useredge.get(rq.getUserId());
-
-                }
-            }
-        }
-
-    }
+//    public Map<Integer,Map<Integer,Integer>> experiment(int beginTimestamp,int endTimestamp)throws IOException{
+//        List<Integer> timePeriod=new ArrayList<Integer>();
+//        for(int i=beginTimestamp;i<=endTimestamp;i++){
+//            timePeriod.add(i);
+//        }
+//        Map<Integer,Map<Integer,Integer>> userLatency=new HashMap<Integer,Map<Integer,Integer>>();
+//        for(Integer time:timePeriod){
+//            for(EdgeServer edgeServer:experimentalEdgeServer){
+//                for(Request rq:predictiveRequest){
+//                    int serverId=useredge.get(rq.getUserId());
+//                  //  edgeServerGraph.
+//                }
+//            }
+//        }
+//
+//    }
 
 //    public int bfs(int startEdge){
 //        boolean[] visited = new boolean[experimentalEdgeServer.size()]; // 记录顶点是否被访问
