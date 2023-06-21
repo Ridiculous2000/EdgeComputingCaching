@@ -37,7 +37,11 @@ public class OurAlgorithm {
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
         dataSimilarityMap = AlgorithmUtils.getDataSimilarityMap(dataVectorMap);
         userNearestServer = AlgorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
-        
+
+
     }
+
+
+
 
 }
