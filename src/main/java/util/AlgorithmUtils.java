@@ -12,9 +12,9 @@ import java.util.*;
 
 public class AlgorithmUtils {
     //相似度阈值，大于这个值的再考虑
-    public static double similarityThreshold = 0.6;
+    public static double similarityThreshold = 0.3;
     //最多要考虑的多少个相似数据
-    public static int maxSimilarityNum = 5;
+    public static int maxSimilarityNum = 15;
     //置信度阈值
     public static int confidenceThreshold = 10;
     //根据传入对象的经纬度，返回距离，单位是 m
