@@ -70,7 +70,7 @@ public class OurAlgorithm {
         return 1 / (1 + Math.exp(-weightValue));
 
 
-        
+
     }
 
 
