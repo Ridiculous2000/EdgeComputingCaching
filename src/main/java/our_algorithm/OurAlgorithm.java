@@ -68,6 +68,9 @@ public class OurAlgorithm {
         }
         double weightValue = latencyWeight*(latency)+simWeight*(1 - sim) + Z;
         return 1 / (1 + Math.exp(-weightValue));
+
+
+        
     }
 
 
