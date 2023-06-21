@@ -15,7 +15,6 @@ public class EdgeServerGraph {
     int[][] everyDistance;
     HashMap<Integer,HashMap<Integer,ArrayList<EdgeServer>>> distanceRank;
 
-
     public void initGraph(ArrayList<EdgeServer> allEdgeServer){
         //¸³Öµ
         this.allEdgeServer = allEdgeServer;
