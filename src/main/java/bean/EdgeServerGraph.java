@@ -12,6 +12,7 @@ public class EdgeServerGraph {
     ArrayList<EdgeServer> allEdgeServer = new ArrayList<>();
     HashMap<Integer,Integer> edgeServerIdToIndex = new HashMap<>();
     HashMap<Integer, List<EdgeServer>> serverGraph = new HashMap<>();
+    Map<Integer,Map<Integer,List<Integer>>> edgeServerDistance=new HashMap<>();
     private static final int INF = Integer.MAX_VALUE;
 
     public void initGraph(ArrayList<EdgeServer> allEdgeServer){
@@ -65,7 +66,7 @@ public class EdgeServerGraph {
     }
     //使用弗洛伊德算法计算各个边缘服务器为x以内的距离
     //返回为<边缘服务器id，<距离，距这个边缘服务器距离的服务器id列表>>
-    public Map<Integer,Map<Integer,List<Integer>>>floyd(int x){
+    public void floyd(int x){
         int n=this.allEdgeServer.size();
         int[][] distances = new int[n][n];
         // 初始化距离矩阵
@@ -92,7 +93,7 @@ public class EdgeServerGraph {
         }
 
         // 构建结果的数据结构
-        Map<Integer, Map<Integer, List<Integer>>> result = new HashMap<>();
+        //Map<Integer, Map<Integer, List<Integer>>> result = new HashMap<>();
         for (int i = 0; i < n; i++) {
             Map<Integer, List<Integer>> distanceMap = new HashMap<>();
             for (int j = 1; j <= x; j++) {
@@ -104,10 +105,9 @@ public class EdgeServerGraph {
                 }
                 distanceMap.put(j, nodeList);
             }
-            result.put(i, distanceMap);
+            this.edgeServerDistance.put(i, distanceMap);
         }
-
-        return result;
+       // return result;
     }
     //就近生成服务器的边
     private void generateEdgeByDistance() {
