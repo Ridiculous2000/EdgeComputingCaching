@@ -13,6 +13,7 @@ public class EdgeServerGraph {
     HashMap<Integer,Integer> edgeServerIdToIndex = new HashMap<>();
     HashMap<Integer, List<EdgeServer>> serverGraph = new HashMap<>();
     Map<Integer,Map<Integer,List<Integer>>> edgeServerDistance=new HashMap<>();
+    //HashMap<Integer,Integer> indexToEdgeServerId = new HashMap<>();
     private static final int INF = Integer.MAX_VALUE;
 
     public void initGraph(ArrayList<EdgeServer> allEdgeServer){
@@ -23,6 +24,7 @@ public class EdgeServerGraph {
         }
         for(int i=0;i<allEdgeServer.size();i++){
             edgeServerIdToIndex.put(allEdgeServer.get(i).getId(),i);
+          //  indexToEdgeServerId.put(i,allEdgeServer.get(i).getId());
         }
         //Éú³É³õÊ¼±ß
         generateEdgeByDistance();
@@ -100,12 +102,12 @@ public class EdgeServerGraph {
                 List<Integer> nodeList = new ArrayList<>();
                 for (int k = 0; k < n; k++) {
                     if (distances[i][k] == j) {
-                        nodeList.add(k);
+                        nodeList.add(this.allEdgeServer.get(k).getId());
                     }
                 }
                 distanceMap.put(j, nodeList);
             }
-            this.edgeServerDistance.put(i, distanceMap);
+            this.edgeServerDistance.put(this.allEdgeServer.get(i).getId(), distanceMap);
         }
        // return result;
     }
