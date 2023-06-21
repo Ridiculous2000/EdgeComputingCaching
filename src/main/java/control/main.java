@@ -1,14 +1,13 @@
 package control;
 
-import OurAlgorithm.OurAlgorithm;
-import data_generation.GenerateData;
-import data_generation.InitBasicData;
-import util.OtherUtils;
+import our_algorithm.OurAlgorithm;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class main {
+
+    public static int minTimestamp = 0;
+    public static int maxTimestamp = 50;
     public static void main(String[] args) throws IOException {
         //读入基本数据
 //        InitBasicData initBasicData = new InitBasicData();

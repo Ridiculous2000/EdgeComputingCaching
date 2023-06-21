@@ -1,4 +1,4 @@
-package OurAlgorithm;
+package our_algorithm;
 
 import bean.*;
 import util.AlgorithmUtils;
@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 public class OurAlgorithm {
+    public static int minTimestamp = 0;
+    public static int maxTimestamp = 50;
     List<User> experimentalUserList;
     List<EdgeServer> experimentalEdgeServer;
     List<PopularData> experimentalPopularData;
@@ -18,6 +20,8 @@ public class OurAlgorithm {
     EdgeServerGraph edgeServerGraph;
     Map<Integer,double[]> dataVectorMap;
     Map<Integer,Map<Integer,Double>> dataSimilarityMap;
+    Map<Integer,Integer> userNearestServer;
+
 
     public void InitializeData() throws IOException {
         this.experimentalUserList = DBUtils.getAllUser();
@@ -32,6 +36,8 @@ public class OurAlgorithm {
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
         dataSimilarityMap = AlgorithmUtils.getDataSimilarityMap(dataVectorMap);
+        userNearestServer = AlgorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
+        
     }
 
 }

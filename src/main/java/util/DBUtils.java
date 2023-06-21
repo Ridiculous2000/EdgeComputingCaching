@@ -7,6 +7,7 @@ import bean.User;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 /*
@@ -151,4 +152,26 @@ public class DBUtils {
         return allRequest;
     }
 
+    public static HashSet<Integer> getUserSetByDataId(String tableName,int dataId1,int minTimestamp,int maxTimestamp) {
+        HashSet<Integer> userSet = new HashSet<Integer>();
+        Connection connection = null;
+        try {
+            connection = DBUtils.getConnection();
+            Statement stmt = connection.createStatement();
+            String selectRequestSql = "SELECT user_id FROM " + tableName + " WHERE popular_data_id = " + dataId1 + " AND timestamp <= " + maxTimestamp +" AND timestamp >="+minTimestamp;
+            ResultSet resultSet = stmt.executeQuery(selectRequestSql);
+            while (resultSet.next()) {
+                userSet.add(resultSet.getInt("user_id"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return userSet;
+    }
 }
