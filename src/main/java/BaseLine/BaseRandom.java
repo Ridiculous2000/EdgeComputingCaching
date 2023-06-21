@@ -12,6 +12,7 @@ public class BaseRandom {
     List<EdgeServer> experimentalEdgeServer;
     List<PopularData> experimentalPopularData;
     List<Request> predictiveRequest;
+    //HashMap<Integer, List<EdgeServer>>
     EdgeServerGraph edgeServerGraph;
     Map<Integer,double[]> dataVectorMap;
     //用户最近的服务器
@@ -64,5 +65,23 @@ public class BaseRandom {
         }
 
     }
+
+//    public int bfs(int startEdge){
+//        boolean[] visited = new boolean[experimentalEdgeServer.size()]; // 记录顶点是否被访问
+//        Queue<Integer> queue = new LinkedList<>();
+//        visited[startEdge] = true;
+//        queue.offer(startEdge);
+//        while (!queue.isEmpty()) {
+//            int currentVertex = queue.poll();
+//            System.out.print(currentVertex + " ");
+//            List<Integer> neighbors =edgeServerGraph.get(currentVertex);
+//                for (int neighbor : neighbors) {
+//                if (!visited[neighbor]) {
+//                    visited[neighbor] = true;
+//                    queue.offer(neighbor);
+//                }
+//            }
+//        }
+//    }
 }
 
