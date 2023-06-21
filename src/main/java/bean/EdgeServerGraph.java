@@ -15,6 +15,9 @@ public class EdgeServerGraph {
     Map<Integer,Map<Integer,List<Integer>>> edgeServerDistance=new HashMap<>();
     //HashMap<Integer,Integer> indexToEdgeServerId = new HashMap<>();
     private static final int INF = Integer.MAX_VALUE;
+    int[][] everyDistance;
+    HashMap<Integer,HashMap<Integer,ArrayList<EdgeServer>>> distanceRank;
+
 
     public void initGraph(ArrayList<EdgeServer> allEdgeServer){
         //赋值
@@ -24,23 +27,16 @@ public class EdgeServerGraph {
         }
         for(int i=0;i<allEdgeServer.size();i++){
             edgeServerIdToIndex.put(allEdgeServer.get(i).getId(),i);
-          //  indexToEdgeServerId.put(i,allEdgeServer.get(i).getId());
         }
         //生成初始边
         generateEdgeByDistance();
         //确保联通
-        if(judgeConnectivity()){
-            System.out.println("联通");
-        }else{
-            System.out.println("不联通");
-        }
         HashMap<Integer, ArrayList<EdgeServer>> allConnectedComponents = getConnectedComponents();
         ensureConnectivity(allConnectedComponents);
-        if(judgeConnectivity()){
-            System.out.println("联通");
-        }else{
-            System.out.println("不联通");
-        }
+        //Floyd获取任意两点之间的最短距离
+        FloydSetDistance();
+        //根据最短距离分类为Map: edId_1 - 距离d - edId_2.即：记录下来与服务器id1 距离为各个值的 服务器id的List
+        rankDistance();
         floyd(5);
     }
 
@@ -163,6 +159,63 @@ public class EdgeServerGraph {
             }
         }
         return uf.size[uf.find(0)] == allEdgeServer.size();
+    }
+
+    //Floyd求各个服务器之间的最短距离
+    public void FloydSetDistance(){
+        int serverNum = serverGraph.size();
+        everyDistance = new int[serverNum][serverNum];
+        for (int i = 0; i < serverNum; i++) {
+            for (int j = 0; j < serverNum; j++) {
+                if (i == j) {
+                    everyDistance[i][j] = 0;
+                } else {
+                    everyDistance[i][j] = 999999;
+                }
+            }
+        }
+        for (Map.Entry<Integer,List<EdgeServer>> entry:serverGraph.entrySet()) {
+            List<EdgeServer> neighbors = entry.getValue();
+            int serverIndex = edgeServerIdToIndex.get(entry.getKey());
+            if (neighbors != null) {
+                for (EdgeServer neighbor : neighbors) {
+                    int neighborIndex = edgeServerIdToIndex.get(neighbor.getId());
+                    everyDistance[serverIndex][neighborIndex] = 1;
+                }
+            }
+        }
+
+        for (int k = 0; k < serverNum; k++) {
+            for (int i = 0; i < serverNum; i++) {
+                for (int j = 0; j < serverNum; j++) {
+                    if (everyDistance[i][k] + everyDistance[k][j] < everyDistance[i][j]) {
+                        everyDistance[i][j] = everyDistance[i][k] + everyDistance[k][j];
+                    }
+                }
+            }
+        }
+    }
+
+    public void rankDistance(){
+        distanceRank = new HashMap<Integer,HashMap<Integer,ArrayList<EdgeServer>>>();
+        for(EdgeServer e1:allEdgeServer){
+            for (EdgeServer e2:allEdgeServer){
+                int e1Index = edgeServerIdToIndex.get(e1.getId());
+                int e2Index = edgeServerIdToIndex.get(e2.getId());
+                if(e1Index!=e2Index){
+                    int d = everyDistance[e1Index][e2Index];
+                    if(d<6){
+                        if(distanceRank.get(e1.getId())==null){
+                            distanceRank.put(e1.getId(),new HashMap<>());
+                        }
+                        if(distanceRank.get(e1.getId()).get(d)==null){
+                            distanceRank.get(e1.getId()).put(d,new ArrayList<EdgeServer>());
+                        }
+                        distanceRank.get(e1.getId()).get(d).add(e2);
+                    }
+                }
+            }
+        }
     }
 
 

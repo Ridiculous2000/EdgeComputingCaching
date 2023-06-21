@@ -11,7 +11,7 @@ public class EdgeServer {
     double latitude = -1000;
     double longitude = -1000;
     int remainingStorageSpace = -1000;
-    ArrayList<PopularData> cachedDataList;
+//    ArrayList<PopularData> cachedDataList;
 
     public int getId() {
         return id;
@@ -53,13 +53,13 @@ public class EdgeServer {
         this.remainingStorageSpace = remainingStorageSpace;
     }
 
-    public ArrayList<PopularData> getCachedDataList() {
-        return cachedDataList;
-    }
-
-    public void setCachedDataList(ArrayList<PopularData> cachedDataList) {
-        this.cachedDataList = cachedDataList;
-    }
+//    public ArrayList<PopularData> getCachedDataList() {
+//        return cachedDataList;
+//    }
+//
+//    public void setCachedDataList(ArrayList<PopularData> cachedDataList) {
+//        this.cachedDataList = cachedDataList;
+//    }
 
     public double getCoveringRadius() {
         return coveringRadius;
