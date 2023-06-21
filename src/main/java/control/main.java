@@ -9,11 +9,11 @@ public class main {
     public static int minTimestamp = 0;
     public static int maxTimestamp = 50;
     public static void main(String[] args) throws IOException {
-        //¶ÁÈë»ù±¾Êý¾Ý
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //        InitBasicData initBasicData = new InitBasicData();
 //        initBasicData.insertBasicUser();
 //        initBasicData.insertBasicEdgeServer();
-        //Éú³ÉÐèÒªµÄÊý¾Ý
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //        GenerateData generateData = new GenerateData();
 //        generateData.addExperimentalUser(400);
 //        generateData.addExperimentalServer(40);
@@ -24,10 +24,11 @@ public class main {
 //            timestampList.add(i);
 //        }
 //        generateData.newRequest(timestampList);
-        //¾ØÕó·Ö½â
+        //ï¿½ï¿½ï¿½ï¿½Ö½ï¿½
 //        OtherUtils.buildRequestMatrix(0,50);
         OurAlgorithm ourAlgorithm = new OurAlgorithm();
         ourAlgorithm.InitializeData();
+        System.out.println("adw");
 
     }
 }
