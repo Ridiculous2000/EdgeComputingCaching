@@ -9,12 +9,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static our_algorithm.OurAlgorithm.similarityThreshold;
-import static our_algorithm.OurAlgorithm.confidenceThreshold;
-import static our_algorithm.OurAlgorithm.maxSimilarityNum;
-import static our_algorithm.OurAlgorithm.Z;
-import static our_algorithm.OurAlgorithm.latencyWeight;
-import static our_algorithm.OurAlgorithm.SimWeight;
+import static our_algorithm.OurAlgorithm.*;
 
 public class AlgorithmUtils {
     //根据传入对象的经纬度，返回距离，单位是 m
@@ -212,6 +207,11 @@ public class AlgorithmUtils {
             HashMap<Integer,ArrayList<EdgeServer>> connectedServer = edgeServerGraph.getDistanceRank().get(nearestServerId);
             for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
                 int lantency = entry.getKey();
+                if(lantency>maxHop){
+                    lantency = 3;
+                    maxQoE = Math.max(maxQoE,calculateQoE(3));
+                    continue;
+                }
                 ArrayList<PopularData>  allPopularData = new ArrayList<>();
                 ArrayList<EdgeServer> serverArrayList = entry.getValue();
                 for(EdgeServer edgeServer:serverArrayList){
