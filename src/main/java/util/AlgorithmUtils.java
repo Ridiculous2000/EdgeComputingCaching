@@ -11,13 +11,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import static our_algorithm.OurAlgorithm.similarityThreshold;
+import static our_algorithm.OurAlgorithm.confidenceThreshold;
+import static our_algorithm.OurAlgorithm.maxSimilarityNum;
+
 public class AlgorithmUtils {
-    //相似度阈值，大于这个值的再考虑
-    public static double similarityThreshold = 0.3;
-    //最多要考虑的多少个相似数据
-    public static int maxSimilarityNum = 15;
-    //置信度阈值
-    public static int confidenceThreshold = 10;
     //根据传入对象的经纬度，返回距离，单位是 m
     public static HashMap<Integer,HashSet<Integer>> userRequestData = new HashMap<>();
     static {

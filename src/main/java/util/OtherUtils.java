@@ -40,4 +40,7 @@ public class OtherUtils {
         return 0;
     }
 
+    public static boolean doubleEqual(double a, double b) {
+        return Math.abs(a - b) < 1e-6;
+    }
 }

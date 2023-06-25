@@ -6,12 +6,18 @@ import java.util.Objects;
 
 public class EdgeServer {
     double coveringRadius = -1000;
-    int MaximumStorageSpace = -1000;
+    int MaxStorageSpace = -1000;
     int id = -1000;
     double latitude = -1000;
     double longitude = -1000;
     int remainingStorageSpace = -1000;
-//    ArrayList<PopularData> cachedDataList;
+    ArrayList<PopularData> cachedDataList = new ArrayList<PopularData>();
+
+    public void cachePopularData(PopularData popularData){
+        if(remainingStorageSpace>=popularData.getSize()){
+            cachedDataList.add(popularData);
+        }
+    }
 
     public int getId() {
         return id;
@@ -38,11 +44,11 @@ public class EdgeServer {
     }
 
     public int getMaximumStorageSpace() {
-        return MaximumStorageSpace;
+        return MaxStorageSpace;
     }
 
     public void setMaximumStorageSpace(int maximumStorageSpace) {
-        MaximumStorageSpace = maximumStorageSpace;
+        MaxStorageSpace = maximumStorageSpace;
     }
 
     public int getRemainingStorageSpace() {
@@ -53,13 +59,13 @@ public class EdgeServer {
         this.remainingStorageSpace = remainingStorageSpace;
     }
 
-//    public ArrayList<PopularData> getCachedDataList() {
-//        return cachedDataList;
-//    }
-//
-//    public void setCachedDataList(ArrayList<PopularData> cachedDataList) {
-//        this.cachedDataList = cachedDataList;
-//    }
+    public ArrayList<PopularData> getCachedDataList() {
+        return cachedDataList;
+    }
+
+    public void setCachedDataList(ArrayList<PopularData> cachedDataList) {
+        this.cachedDataList = cachedDataList;
+    }
 
     public double getCoveringRadius() {
         return coveringRadius;

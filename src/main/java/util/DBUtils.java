@@ -6,9 +6,7 @@ import bean.Request;
 import bean.User;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /*
  * JDBC工具类
@@ -122,6 +120,18 @@ public class DBUtils {
         return allEdgeServer;
     }
 
+
+    public static HashMap<Integer,ArrayList<Request>> getRequestByTime(String tableName,int minTimestamp,int maxTimestamp){
+        ArrayList<Request> requests = (ArrayList<Request>) getAllRequestByTime(tableName,minTimestamp,maxTimestamp);
+        HashMap<Integer, ArrayList<Request>> requestsByTimestamp = new HashMap<>();
+        for (Request request : requests) {
+            int timestamp = request.getTimestamp();
+            ArrayList timestampRequests = requestsByTimestamp.getOrDefault(timestamp, new ArrayList<>());
+            timestampRequests.add(request);
+            requestsByTimestamp.put(timestamp, timestampRequests);
+        }
+        return requestsByTimestamp;
+    }
 
     //可以读取 预测的请求 或 实际的请求
     public static List<Request> getAllRequestByTime(String tableName,int minTimestamp,int maxTimestamp){

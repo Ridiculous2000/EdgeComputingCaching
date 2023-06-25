@@ -30,7 +30,8 @@ public class main {
         //本文算法
         OurAlgorithm ourAlgorithm = new OurAlgorithm();
         //初始化算法所需内容
-        ourAlgorithm.InitializeData();
+        ourAlgorithm.initializeData();
+        ourAlgorithm.findMaxQoEDecision(51);
         System.out.println("adw");
 
     }
