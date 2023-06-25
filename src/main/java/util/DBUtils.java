@@ -18,10 +18,15 @@ public class DBUtils {
     private static String password;
 
     static{
+
         driverClass = "com.mysql.cj.jdbc.Driver";
         url = "jdbc:mysql://localhost:3306/edge_computing_caching?useUnicode=true&useSSL=false&characterEncoding=UTF-8&serverTimezone=GMT%2B8";
         username = "root";
         password = "12345678";
+//        driverClass = "com.mysql.cj.jdbc.Driver";
+//        url = "jdbc:mysql://localhost:3306/edgecomputing?useUnicode=true&useSSL=false&characterEncoding=UTF-8&serverTimezone=GMT%2B8";
+//        username = "root";
+//        password = "123456";
         try {
             //×¢²áÇý¶¯
             Class.forName(driverClass);

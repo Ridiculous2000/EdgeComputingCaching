@@ -64,50 +64,50 @@ public class EdgeServerGraph {
     }
     //使用弗洛伊德算法计算各个边缘服务器为x以内的距离
     //返回为<边缘服务器id，<距离，距这个边缘服务器距离的服务器id列表>>
-//    public void floyd(int x){
-//        int n=this.allEdgeServer.size();
-//        int[][] distances = new int[n][n];
-//        // 初始化距离矩阵
-//        for (int i = 0; i < n; i++) {
-//            for (int j = 0; j < n; j++) {
-//                distances[i][j] = (i == j) ? 0 : INF;
-//            }
-//        }
-//        // 更新邻接表中的边权值到距离矩阵
-//        for (int i = 0; i < this.allEdgeServer.size(); i++) {
-//            for (EdgeServer server : this.serverGraph.get(i)) {
-//                distances[i][edgeServerIdToIndex.get(server.getId())] = 1;
-//            }
-//        }
-//        for (int k = 0; k < n; k++) {
-//            for (int i = 0; i < n; i++) {
-//                for (int j = 0; j < n; j++) {
-//                    if (distances[i][k] != INF && distances[k][j] != INF &&
-//                            distances[i][j] > distances[i][k] + distances[k][j]) {
-//                        distances[i][j] = distances[i][k] + distances[k][j];
-//                    }
-//                }
-//            }
-//        }
-//
-//        // 构建结果的数据结构
-//        //Map<Integer, Map<Integer, List<Integer>>> result = new HashMap<>();
-//        for (int i = 0; i < n; i++) {
-//            Map<Integer, List<Integer>> distanceMap = new HashMap<>();
-//            for (int j = 1; j <= x; j++) {
-//                List<Integer> nodeList = new ArrayList<>();
-//                for (int k = 0; k < n; k++) {
-//                    if (distances[i][k] == j) {
-//                        nodeList.add(this.allEdgeServer.get(k).getId());
-//                    }
-//                }
-//                distanceMap.put(j, nodeList);
-//            }
-//            this.edgeServerDistance.put(this.allEdgeServer.get(i).getId(), distanceMap);
-//        }
-//       // return result;
-//    }
-    //就近生成服务器的边
+    public void floyd(int x){
+        int n=this.allEdgeServer.size();
+        int[][] distances = new int[n][n];
+        // 初始化距离矩阵
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                distances[i][j] = (i == j) ? 0 : INF;
+            }
+        }
+        // 更新邻接表中的边权值到距离矩阵
+        for (int i = 0; i < this.allEdgeServer.size(); i++) {
+            for (EdgeServer server : this.serverGraph.get(i)) {
+                distances[i][edgeServerIdToIndex.get(server.getId())] = 1;
+            }
+        }
+        for (int k = 0; k < n; k++) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (distances[i][k] != INF && distances[k][j] != INF &&
+                            distances[i][j] > distances[i][k] + distances[k][j]) {
+                        distances[i][j] = distances[i][k] + distances[k][j];
+                    }
+                }
+            }
+        }
+
+        // 构建结果的数据结构
+        //Map<Integer, Map<Integer, List<Integer>>> result = new HashMap<>();
+        for (int i = 0; i < n; i++) {
+            Map<Integer, List<Integer>> distanceMap = new HashMap<>();
+            for (int j = 1; j <= x; j++) {
+                List<Integer> nodeList = new ArrayList<>();
+                for (int k = 0; k < n; k++) {
+                    if (distances[i][k] == j) {
+                        nodeList.add(this.allEdgeServer.get(k).getId());
+                    }
+                }
+                distanceMap.put(j, nodeList);
+            }
+            this.edgeServerDistance.put(this.allEdgeServer.get(i).getId(), distanceMap);
+        }
+      //  return result;
+    }
+   // 就近生成服务器的边
     private void generateEdgeByDistance() {
         for (int i = 0; i < allEdgeServer.size(); i++) {
             // 根据距离建立优先队列
