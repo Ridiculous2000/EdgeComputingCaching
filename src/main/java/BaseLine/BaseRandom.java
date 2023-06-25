@@ -45,7 +45,7 @@ public class BaseRandom {
                     pds.add(pd);
                 }
             }
-            server.setCachedDataList((ArrayList<PopularData>) pds);
+           // server.setCachedDataList((ArrayList<PopularData>) pds);
         }
     }
     //进行实验返回的是<时间戳，<用户id，时延>>

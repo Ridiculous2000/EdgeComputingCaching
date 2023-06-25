@@ -36,7 +36,7 @@ public class EdgeServerGraph {
         FloydSetDistance();
         //根据最短距离分类为Map: edId_1 - 距离d - edId_2.即：记录下来与服务器id1 距离为各个值的 服务器id的List
         rankDistance();
-        floyd(5);
+       // floyd(5);
     }
 
     //返回各个联通分量
