@@ -12,6 +12,14 @@ public class PopularData {
         this.size = size;
     }
 
+    public PopularData(int id) {
+        this.id = id;
+    }
+
+    public PopularData() {
+
+    }
+
     public int getId() {
         return id;
     }

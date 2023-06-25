@@ -31,8 +31,7 @@ public class main {
         OurAlgorithm ourAlgorithm = new OurAlgorithm();
         //初始化算法所需内容
         ourAlgorithm.initializeData();
-        ourAlgorithm.findMaxQoEDecision(51);
-        System.out.println("adw");
+        ourAlgorithm.findBestDecision(51);
 
     }
 }

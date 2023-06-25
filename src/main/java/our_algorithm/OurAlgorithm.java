@@ -25,10 +25,13 @@ public class OurAlgorithm {
     public static double SimWeight = -6;
 //    public static double delayThreshold = 1;
 //    public static double simThreshold = 1;
+    public static double SumQoEWeight = 1;
+    public static double FIndexWeight = 1;
     public static double Z = 3;
     List<User> experimentalUserList;
     List<EdgeServer> experimentalEdgeServer;
     List<PopularData> experimentalPopularData;
+    HashMap<Integer,Integer> dataIdToIndex = new HashMap<>();
     HashMap<Integer,ArrayList<Request>> predictiveRequest;
     EdgeServerGraph edgeServerGraph;
     Map<Integer,double[]> dataVectorMap;
@@ -36,6 +39,8 @@ public class OurAlgorithm {
     Map<Integer,Integer> userNearestServer;
     HashMap<Request,ArrayList<ServerDataPair>> requestToCache = new HashMap();
     HashMap<ServerDataPair,ArrayList<Request>> cacheToRequest = new HashMap<>();
+    HashMap<ServerDataPair,Double> remCacheUtility = new HashMap<>();
+
 
     //缓存对
     public class ServerDataPair implements Comparable<ServerDataPair> {
@@ -58,7 +63,6 @@ public class OurAlgorithm {
             this.dataId = dataId;
         }
 
-
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -79,6 +83,38 @@ public class OurAlgorithm {
         }
     }
 
+    public class UserQoEPair implements Comparable<UserQoEPair>{
+        int userId;
+        int requestId;
+        int dataId;
+        double QoE;
+
+        public UserQoEPair(int userId, int dataId, double qoE) {
+            this.userId = userId;
+            this.dataId = dataId;
+            QoE = qoE;
+        }
+
+
+        @Override
+        public int compareTo(UserQoEPair other) {
+            return Double.compare(this.QoE,other.QoE);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof UserQoEPair)) return false;
+            UserQoEPair that = (UserQoEPair) o;
+            return userId == that.userId && dataId == that.dataId;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(userId, dataId);
+        }
+    }
+
     //初始化要用的数据
     public void initializeData() throws IOException {
         this.experimentalUserList = DBUtils.getAllUser();
@@ -89,6 +125,9 @@ public class OurAlgorithm {
         for(PopularData pd:this.experimentalPopularData){
             dataIdList.add(pd.getId());
         }
+        for(int i=0;i<experimentalPopularData.size();i++){
+            dataIdToIndex.put(experimentalPopularData.get(i).getId(),i);
+        }
         dataVectorMap = FileUtils.getDataVectorMap("src/AlgorithmicData/data_matrix.txt",dataIdList);
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
@@ -97,7 +136,7 @@ public class OurAlgorithm {
     }
 
 
-    public CachingDecision findMaxQoEDecision(int timestamp){
+    public CachingDecision findBestDecision(int timestamp){
         //初始化数据
         initAlgorithmicTempData(timestamp);
         //拿到这一轮预测的请求
@@ -154,7 +193,6 @@ public class OurAlgorithm {
             // 添加队列
             utilityPriorityQueue.add(new ServerDataPair(cache.serverId,cache.dataId,sumUtility));
         }
-
         //还有空间
         while (sumAvailableSpace>0){
             //找到总效用增量最大的缓存对
@@ -166,12 +204,10 @@ public class OurAlgorithm {
             if(edgeServer.getRemainingStorageSpace()<popularData.getSize()){
                 continue;
             }else{
-                if(cacheSumDeltaUtility.get(bestServerDataPair)==0){
-                    System.out.println("now:  ");
-                }
                 //缓存这个数据
                 edgeServer.cachePopularData(popularData);
                 sumAvailableSpace -= popularData.getSize();
+                remCacheUtility.put(bestServerDataPair,bestServerDataPair.sumDeltaUtility);
                 //找到缓存对相关的请求
                 ArrayList<Request> relatedRequest = cacheToRequest.get(bestServerDataPair);
                 //更新当前效用
@@ -204,21 +240,8 @@ public class OurAlgorithm {
             }
         }
 
-        double resultSumQoE = 0.0;
-        for(Request r:predictiveRequest){
-            double QoE = 0;
-            if(nowRequestUtility.get(r)!=null){
-                QoE=nowRequestUtility.get(r);
-            }
-            resultSumQoE+=QoE;
-        }
-        System.out.println(resultSumQoE);
-
-//        cachingDecision.setCachingState();
-
         Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
-
-        // server:20011  dataId:30051
+        //保存第一步的最优解
         for(EdgeServer edgeServer:experimentalEdgeServer){
             ArrayList<PopularData> dataList =  edgeServer.getCachedDataList();
             if(cachingResult.get(edgeServer)==null){
@@ -227,16 +250,79 @@ public class OurAlgorithm {
             for(PopularData popularData:dataList){
                 cachingResult.get(edgeServer).add(popularData);
             }
-            if(cachingResult.get(edgeServer).size()!=dataList.size()){
-                System.out.println("???");
-            }
         }
         cachingDecision.setCachingState(cachingResult);
-        double evaluationQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision,predictiveRequest);
-        System.out.println(evaluationQoE);
-        return cachingDecision;
 
+
+        double maxSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision,predictiveRequest);
+        double startFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision,predictiveRequest);
+        HashMap<Request,Double> allUserQoE = AlgorithmUtils.cacheDecisionAllUserQoE(cachingDecision,predictiveRequest);
+        PriorityQueue<UserQoEPair> lowQoEUserQueue = new PriorityQueue<>();
+        for(Map.Entry<Request,Double> entry:allUserQoE.entrySet()){
+            Request r = entry.getKey();
+            lowQoEUserQueue.add(new UserQoEPair(r.getUserId(),r.getPopularDataId(),entry.getValue()));
+        }
+
+//        Map<EdgeServer, HashSet<PopularData>> startCacheResult = cachingDecision.getCachingState();
+//        Map<EdgeServer, HashSet<PopularData>> endCacheResult = cachingDecision.getCachingState();
+
+        /*
+            SumQoE = 311.78
+            FIndex = 0.7299
+            FinalValue = 0.909967
+         */
+        while(lowQoEUserQueue.size()>allUserQoE.size()/2+1){
+            UserQoEPair userQoEPair = lowQoEUserQueue.poll();
+            int userId = userQoEPair.userId;
+            int dataId = userQoEPair.dataId;
+            int dataIndex = dataIdToIndex.get(dataId);
+            PopularData toCacheData = experimentalPopularData.get(dataIndex);
+            int nearestServerId = userNearestServer.get(userId);
+            EdgeServer edgeServer = experimentalEdgeServer.get(edgeServerGraph.getEdgeServerIdToIndex().get(nearestServerId));
+            HashSet<PopularData> popularDataSet = cachingDecision.getCachingState().get(edgeServer);
+            double beforeFinalValue = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest,maxSumQoE);
+            int minQoEDataId = 0;
+            PopularData minQoEData = new PopularData();
+            double minDataQoE = 9999;
+            for(PopularData popularData:popularDataSet){
+                double utility = 0;
+                if(remCacheUtility.get(new ServerDataPair(nearestServerId,popularData.getId()))!=null){
+                    utility = remCacheUtility.get(new ServerDataPair(nearestServerId,popularData.getId()));
+                }else{
+                    continue;
+                }
+                if(utility<minDataQoE&&popularData.getSize()>=toCacheData.getSize()){
+                    minDataQoE = utility;
+                    minQoEDataId = popularData.getId();
+                    minQoEData = popularData;
+                }
+            }
+            if(minDataQoE==9999){
+                continue;
+            }
+            //进行替换
+            popularDataSet.remove(new PopularData(minQoEDataId));
+            popularDataSet.add(toCacheData);
+            //计算，看看总值变化没
+            double afterFinalValue = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest,maxSumQoE);
+            //变差了就再换回来
+            if(afterFinalValue<beforeFinalValue){
+                popularDataSet.remove(toCacheData);
+                popularDataSet.add(minQoEData);
+                double nowFinalValue = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest,maxSumQoE);
+            }
+        }
+        double finalSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision,predictiveRequest);
+        double finalFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision,predictiveRequest);
+        double result = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest,maxSumQoE);
+        cachingDecision.setFIndexQoE(finalFIndex);
+        cachingDecision.setOptimizationObjective(result);
+        System.out.println("最终结果 SumQoE: "+finalSumQoE+" —— " + "FIndex: "+finalFIndex + " —— "+"FinalValue: "+result);
+        return cachingDecision;
     }
+
+
+
 
     //初始化，每个请求会影响多少个缓存对，以及每个缓存对会影响多少个请求
     public void initAlgorithmicTempData(int timestamp){
