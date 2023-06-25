@@ -149,7 +149,17 @@ public class AlgorithmUtils {
         }
         return  userNearestServer;
     }
-
+    //根据提供的服务器id，输入为一个服务器列表，返回该服务器对象
+    public static EdgeServer findEdgeServerById(List<EdgeServer> es,int id){
+        EdgeServer find=null;
+        for(EdgeServer e:es){
+            if(e.getId()==id){
+                find=e;
+                break;
+            }
+        }
+            return find;
+    }
 
 
 }

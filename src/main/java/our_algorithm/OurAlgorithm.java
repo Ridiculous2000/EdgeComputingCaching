@@ -11,7 +11,7 @@ import java.util.*;
 public class OurAlgorithm {
     public static int minTimestamp = 0;
     public static int maxTimestamp = 50;
-    public static int maxStorageSpace = 6;
+    public static int maxStorageSpace = 3;
     //相似度阈值，大于这个值的再考虑
     public static double similarityThreshold = 0.2;
     //最多要考虑的多少个相似数据

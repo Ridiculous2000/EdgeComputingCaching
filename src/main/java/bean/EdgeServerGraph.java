@@ -1,5 +1,6 @@
 package bean;
 
+import sun.awt.geom.AreaOp;
 import util.AlgorithmUtils;
 import util.OtherUtils;
 
@@ -12,8 +13,8 @@ public class EdgeServerGraph {
     ArrayList<EdgeServer> allEdgeServer = new ArrayList<>();
     HashMap<Integer,Integer> edgeServerIdToIndex = new HashMap<>();
     HashMap<Integer, List<EdgeServer>> serverGraph = new HashMap<>();
+
     Map<Integer,Map<Integer,List<Integer>>> edgeServerDistance=new HashMap<>();
-    //HashMap<Integer,Integer> indexToEdgeServerId = new HashMap<>();
     private static final int INF = Integer.MAX_VALUE;
     int[][] everyDistance;
     HashMap<Integer,HashMap<Integer,ArrayList<EdgeServer>>> distanceRank;
@@ -36,7 +37,7 @@ public class EdgeServerGraph {
         FloydSetDistance();
         //根据最短距离分类为Map: edId_1 - 距离d - edId_2.即：记录下来与服务器id1 距离为各个值的 服务器id的List
         rankDistance();
-       // floyd(5);
+        floyd(5);
     }
 
     //返回各个联通分量
@@ -75,7 +76,7 @@ public class EdgeServerGraph {
         }
         // 更新邻接表中的边权值到距离矩阵
         for (int i = 0; i < this.allEdgeServer.size(); i++) {
-            for (EdgeServer server : this.serverGraph.get(i)) {
+            for (EdgeServer server : this.serverGraph.get(this.allEdgeServer.get(i).getId())) {
                 distances[i][edgeServerIdToIndex.get(server.getId())] = 1;
             }
         }
@@ -106,6 +107,7 @@ public class EdgeServerGraph {
             this.edgeServerDistance.put(this.allEdgeServer.get(i).getId(), distanceMap);
         }
       //  return result;
+        System.out.println("aaaa");
     }
    // 就近生成服务器的边
     private void generateEdgeByDistance() {
@@ -216,8 +218,17 @@ public class EdgeServerGraph {
             }
         }
     }
-
-
+    public EdgeServer idFindServer(int serverId){
+        EdgeServer result = null;
+        for(EdgeServer server:allEdgeServer){
+            if(server.getId()==serverId)
+                result=server;
+        }
+        return result;
+    }
+    public Map<Integer, Map<Integer, List<Integer>>> getEdgeServerDistance() {
+        return edgeServerDistance;
+    }
     public int getConnectionRange() {
         return connectionRange;
     }

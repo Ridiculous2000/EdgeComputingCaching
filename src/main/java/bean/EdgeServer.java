@@ -58,7 +58,7 @@ public class EdgeServer {
     public void setRemainingStorageSpace(int remainingStorageSpace) {
         this.remainingStorageSpace = remainingStorageSpace;
     }
-
+    public void renewCachedDataList(){this.cachedDataList=new ArrayList<PopularData>();}
     public ArrayList<PopularData> getCachedDataList() {
         return cachedDataList;
     }
