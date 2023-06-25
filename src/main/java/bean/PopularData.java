@@ -1,5 +1,7 @@
 package bean;
 
+import java.util.Objects;
+
 public class PopularData {
     int id = -1000;
     int size = -1000;
@@ -24,5 +26,18 @@ public class PopularData {
 
     public void setSize(int size) {
         this.size = size;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PopularData)) return false;
+        PopularData that = (PopularData) o;
+        return getId() == that.getId();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
     }
 }

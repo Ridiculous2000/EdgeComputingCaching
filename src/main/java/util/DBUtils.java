@@ -8,6 +8,7 @@ import bean.User;
 import java.sql.*;
 import java.util.*;
 
+
 /*
  * JDBC工具类
  * */
@@ -22,7 +23,7 @@ public class DBUtils {
         driverClass = "com.mysql.cj.jdbc.Driver";
         url = "jdbc:mysql://localhost:3306/edge_computing_caching?useUnicode=true&useSSL=false&characterEncoding=UTF-8&serverTimezone=GMT%2B8";
         username = "root";
-        password = "123456";
+        password = "12345678";
         try {
             //注册驱动
             Class.forName(driverClass);
@@ -185,4 +186,7 @@ public class DBUtils {
         }
         return userSet;
     }
+
+
+
 }

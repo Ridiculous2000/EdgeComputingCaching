@@ -17,6 +17,7 @@ public class EdgeServer {
         if(remainingStorageSpace>=popularData.getSize()){
             cachedDataList.add(popularData);
         }
+        remainingStorageSpace -= popularData.size;
     }
 
     public int getId() {

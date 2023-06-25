@@ -11,11 +11,11 @@ import java.util.*;
 public class OurAlgorithm {
     public static int minTimestamp = 0;
     public static int maxTimestamp = 50;
-    public static int maxStorageSpace = 6;
+    public static int maxStorageSpace = 3;
     //相似度阈值，大于这个值的再考虑
-    public static double similarityThreshold = 0.2;
+    public static double similarityThreshold = 0.5;
     //最多要考虑的多少个相似数据
-    public static int maxSimilarityNum = 150;
+    public static int maxSimilarityNum = 80;
     //置信度阈值
     public static int confidenceThreshold = 10;
     //最大跳数
@@ -89,14 +89,14 @@ public class OurAlgorithm {
         for(PopularData pd:this.experimentalPopularData){
             dataIdList.add(pd.getId());
         }
-        this.dataVectorMap = FileUtils.getDataVectorMap("src/AlgorithmicData/data_matrix.txt",dataIdList);
+        dataVectorMap = FileUtils.getDataVectorMap("src/AlgorithmicData/data_matrix.txt",dataIdList);
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
         dataSimilarityMap = AlgorithmUtils.getDataSimilarityMap(dataVectorMap);
         userNearestServer = AlgorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
     }
 
-    
+
     public CachingDecision findMaxQoEDecision(int timestamp){
         //初始化数据
         initAlgorithmicTempData(timestamp);
@@ -117,114 +117,123 @@ public class OurAlgorithm {
         int sumAvailableSpace = experimentalEdgeServer.size()*maxStorageSpace;
         //缓存对 对每个请求的效用
         HashMap<ServerDataPair,HashMap<Request,Double>> cacheRequestUtility = new HashMap<>();
-        //缓存对所有请求的总效用
-        HashMap<ServerDataPair,Double> cacheSumUtility = new HashMap<>();
+        //缓存对所有请求的效用增量
+        HashMap<ServerDataPair,HashMap<Request,Double>> cacheRequestDeltaUtility = new HashMap<>();
+        //缓存对所有请求的总效用增量
+        HashMap<ServerDataPair,Double> cacheSumDeltaUtility = new HashMap<>();
         //缓存对的优先队列
         PriorityQueue<ServerDataPair> utilityPriorityQueue = new PriorityQueue<>();
         //当前存储情况下，各个请求的效用
         HashMap<Request,Double> nowRequestUtility = new HashMap<>();
-        HashMap<Request,Double> nextRequestUtility = new HashMap<>();
+//        HashMap<Request,Double> nextRequestUtility = new HashMap<>();
         for(Request r:predictiveRequest){
             nowRequestUtility.put(r,0.0);
-            nextRequestUtility.put(r,0.0);
+//            nextRequestUtility.put(r,0.0);
         }
         //计算：（1）每个存储对 对请求的效用  （2）每个存储对 对所有请求的总效用
+        // 计算相关的缓存对的效用
         for (Map.Entry<ServerDataPair, ArrayList<Request>> entry : cacheToRequest.entrySet()) {
             ServerDataPair cache = entry.getKey();
             ArrayList<Request> requests = entry.getValue();
             HashMap<Request, Double> requestUtility = new HashMap<>();
             double sumUtility = 0.0;
             for (Request request : requests) {
+                //最近服务器和缓存了数据的服务器之间的距离
                 int nearestServerIndex = serverIdToIndex.get(userNearestServer.get(request.getUserId()));
-                int cacheServerId = serverIdToIndex.get(cache.serverId);
-                int latency = allDistance[nearestServerIndex][cacheServerId];
-                double utility = calculateQoE(request.getPopularDataId(),cache.dataId,latency);
+                int cacheServerIndex = serverIdToIndex.get(cache.serverId);
+                int latency = allDistance[nearestServerIndex][cacheServerIndex];
+                // 请求的数据和缓存的数据
+                double utility = AlgorithmUtils.calculateQoE(request.getPopularDataId(),cache.dataId,latency);
                 requestUtility.put(request, utility);
                 sumUtility += utility;
             }
+            // 记录增量，当前效用为0，所以增量就是每个请求的效用
+            cacheRequestDeltaUtility.put(cache,requestUtility);
             cacheRequestUtility.put(cache, requestUtility);
-            cacheSumUtility.put(cache, sumUtility);
+            cacheSumDeltaUtility.put(cache, sumUtility);
+            // 添加队列
             utilityPriorityQueue.add(new ServerDataPair(cache.serverId,cache.dataId,sumUtility));
         }
 
-        ArrayList<ServerDataPair> debugCacheList = new ArrayList<>();
-
-        //找到总效用增量最大的缓存对
-        while (!utilityPriorityQueue.isEmpty()&&sumAvailableSpace>0){
+        //还有空间
+        while (sumAvailableSpace>0){
+            //找到总效用增量最大的缓存对
             ServerDataPair bestServerDataPair = utilityPriorityQueue.poll();
-            // 缓存对数据未过时
-            if(bestServerDataPair.sumDeltaUtility==cacheSumUtility.get(bestServerDataPair)){
-                EdgeServer edgeServer = experimentalEdgeServer.get(serverIdToIndex.get(bestServerDataPair.serverId));
-                PopularData popularData = experimentalPopularData.get(dataIdToIndex.get(bestServerDataPair.dataId));
-                // 有空间可以存储
-                if(edgeServer.getRemainingStorageSpace()>=popularData.getSize()){
-                    //debug
-                    debugCacheList.add(bestServerDataPair);
-                    //缓存这个数据
-                    edgeServer.cachePopularData(popularData);
-                    sumAvailableSpace -= popularData.getSize();
-                    //找到缓存对相关的请求
-                    HashMap<Request,Double> relatedRequest = cacheRequestUtility.get(bestServerDataPair);
-                    // 效用更新过的请求
-                    ArrayList<Request> updatedRequest = new ArrayList<>();
-                    for(Map.Entry<Request,Double> entry:relatedRequest.entrySet()){
-                        if(entry.getValue()>nextRequestUtility.get(entry.getKey())){
-                            updatedRequest.add(entry.getKey());
-                            nextRequestUtility.put(entry.getKey(),entry.getValue());
-                        }
+            // 缓存对的情况
+            EdgeServer edgeServer = experimentalEdgeServer.get(serverIdToIndex.get(bestServerDataPair.serverId));
+            PopularData popularData = experimentalPopularData.get(dataIdToIndex.get(bestServerDataPair.dataId));
+            //不能存继续找合适的
+            if(edgeServer.getRemainingStorageSpace()<popularData.getSize()){
+                continue;
+            }else{
+                if(cacheSumDeltaUtility.get(bestServerDataPair)==0){
+                    System.out.println("now:  ");
+                }
+                //缓存这个数据
+                edgeServer.cachePopularData(popularData);
+                sumAvailableSpace -= popularData.getSize();
+                //找到缓存对相关的请求
+                ArrayList<Request> relatedRequest = cacheToRequest.get(bestServerDataPair);
+                //更新当前效用
+                for(Request request:relatedRequest){
+                    nowRequestUtility.put(request,Math.max(nowRequestUtility.get(request),cacheRequestUtility.get(bestServerDataPair).get(request)));
+                }
+                //更新现在各个缓存对 对各个请求的效用增量
+                for(Request r:relatedRequest){
+                    // 找到请求相关的缓存对
+                    ArrayList<ServerDataPair> relatedCache = requestToCache.get(r);
+                    for(ServerDataPair serverDataPair:relatedCache){
+                        double requestUtility = cacheRequestUtility.get(serverDataPair).get(r);
+                        double deletUtility = Math.max(requestUtility-nowRequestUtility.get(r),0);
+                        cacheRequestDeltaUtility.get(serverDataPair).put(r,deletUtility);
                     }
+                }
+                for(Map.Entry<ServerDataPair,HashMap<Request,Double>> entry:cacheRequestDeltaUtility.entrySet()){
+                    HashMap<Request,Double> requestUtility = entry.getValue();
+                    double sumDeltaUtility = 0;
+                    for(Map.Entry<Request,Double> ru:requestUtility.entrySet()){
+                        sumDeltaUtility+=ru.getValue();
+                    }
+                    cacheSumDeltaUtility.put(entry.getKey(),sumDeltaUtility);
+                }
 
-                    HashSet<Integer> debugDataSet = new HashSet<>();
-                    for(Request r:updatedRequest){
-                        debugDataSet.add(r.getPopularDataId());
-                    }
-
-
-                    for(Request r:updatedRequest){
-                        ArrayList<ServerDataPair> relatedCache = requestToCache.get(r);
-                        double bestCacheRequestUtility = relatedRequest.get(r);
-                        for(ServerDataPair serverDataPair:relatedCache){
-                            double relatedCacheRequestUtility = cacheRequestUtility.get(serverDataPair).get(r);
-//                            double deltaRequestUtility = nextRequestUtility.get(r)-nowRequestUtility.get(r);
-//                            double promotionUtility = relatedCacheRequestUtility - nowRequestUtility.get(r);
-                            double csu = cacheSumUtility.get(serverDataPair);
-                            double nru = nextRequestUtility.get(r);
-                            double nowRU = nowRequestUtility.get(r);
-                            double newSumUtility = 0.0;
-//                            if(nowRequestUtility.get(r)==null){
-//                                System.out.println("bbb");
-//                            }
-                            if(relatedCacheRequestUtility<=nowRequestUtility.get(r)){
-                                continue;
-                            }
-                            if(relatedCacheRequestUtility>nextRequestUtility.get(r)){
-                                newSumUtility = cacheSumUtility.get(serverDataPair) - (relatedCacheRequestUtility-nextRequestUtility.get(r));
-                            }else{
-                                newSumUtility = cacheSumUtility.get(serverDataPair)-(relatedCacheRequestUtility-nowRequestUtility.get(r));
-                            }
-//                            double newSumUtility = cacheSumUtility.get(serverDataPair)-(Math.min(nextRequestUtility.get(r),relatedCacheRequestUtility)-nowRequestUtility.get(r));
-//                            if(newSumUtility>cacheSumUtility.get(serverDataPair)){
-//                                System.out.println("aaa");
-//                            }
-                            cacheSumUtility.put(serverDataPair,newSumUtility);
-                            utilityPriorityQueue.add(new ServerDataPair(serverDataPair.serverId,serverDataPair.dataId,newSumUtility));
-                        }
-                    }
-                    for(Map.Entry<Request,Double> entry:relatedRequest.entrySet()){
-                        if(entry.getValue()>nowRequestUtility.get(entry.getKey())){
-                            nowRequestUtility.put(entry.getKey(),entry.getValue());
-                        }
-                    }
+                utilityPriorityQueue.clear();
+                for(Map.Entry<ServerDataPair,Double> entry:cacheSumDeltaUtility.entrySet()){
+                    utilityPriorityQueue.add(new ServerDataPair(entry.getKey().serverId,entry.getKey().dataId,entry.getValue()));
                 }
             }
         }
 
         double resultSumQoE = 0.0;
-        for(ServerDataPair serverDataPair:debugCacheList){
-            resultSumQoE+=serverDataPair.sumDeltaUtility;
+        for(Request r:predictiveRequest){
+            double QoE = 0;
+            if(nowRequestUtility.get(r)!=null){
+                QoE=nowRequestUtility.get(r);
+            }
+            resultSumQoE+=QoE;
         }
         System.out.println(resultSumQoE);
 
+//        cachingDecision.setCachingState();
+
+        Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
+
+        // server:20011  dataId:30051
+        for(EdgeServer edgeServer:experimentalEdgeServer){
+            ArrayList<PopularData> dataList =  edgeServer.getCachedDataList();
+            if(cachingResult.get(edgeServer)==null){
+                cachingResult.put(edgeServer,new HashSet<>());
+            }
+            for(PopularData popularData:dataList){
+                cachingResult.get(edgeServer).add(popularData);
+            }
+            if(cachingResult.get(edgeServer).size()!=dataList.size()){
+                System.out.println("???");
+            }
+        }
+        cachingDecision.setCachingState(cachingResult);
+        double evaluationQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision,predictiveRequest);
+        System.out.println(evaluationQoE);
         return cachingDecision;
 
     }
@@ -238,8 +247,6 @@ public class OurAlgorithm {
         HashMap<Integer,Integer> serverIdToIndex = edgeServerGraph.getEdgeServerIdToIndex();
         int sumSpace = experimentalEdgeServer.size()*maxStorageSpace;
         //缓存每个请求可以被那些缓存对影响
-        int debugCount = 0;
-        HashSet<Integer> debugDataSet = new HashSet<>();
         for(Request r:predictiveRequest){
             int dataId = r.getPopularDataId();
             int userId = r.getUserId();
@@ -264,14 +271,6 @@ public class OurAlgorithm {
                 for(int j=0;j<allRelatedData.size();j++){
                     ServerDataPair serverDataPair = new ServerDataPair(allRelatedServer.get(i).getId(),allRelatedData.get(j));
                     relatedServerDataPair.add(serverDataPair);
-
-                    ServerDataPair s = new ServerDataPair(20112,30008);
-                    if(serverDataPair.equals(s)){
-                        debugCount++;
-                        debugDataSet.add(r.getPopularDataId());
-                    }
-
-
                 }
             }
             requestToCache.put(r,relatedServerDataPair);
@@ -292,25 +291,78 @@ public class OurAlgorithm {
     }
 
 
-    
-    //带有软命中的QoE ： sigmoid(H(x))=1/(1+e^-H(x))
-    // H(x) = lw*Latency+s*(1-sim)+Z
-    //参数设置后的结果是 H(x) = -Latency[0-3] + (-6*(1-sim[0-1]))+3
-    /*
-        参数设置理由：
-        (1) Latency=0,sim=0时候[最近获取不相关] H(x)=0+-6+3=-3,QoE = 0.047
-        (2) Latency=3,sim=0时候[云端获取] H(x)=3+ -6 +3 = 0 QoE=0.5
-        (3) Latency=0,sim=0.5时候[就近获取个一般的] H(x)=0+-3 + 3 = 0 QoE=0.5
-     */
-    private double calculateQoE(int requestDataId, int cacheDataId, int latency) {
-        double sim = 0;
-        if(dataSimilarityMap.get(requestDataId).get(cacheDataId)!=null){
-            sim = dataSimilarityMap.get(requestDataId).get(cacheDataId);
-        }
-        double weightValue = latencyWeight*(latency)+SimWeight*(1 - sim) + Z;
-        return 1 / (1 + Math.exp(-weightValue));
 
-    }
 
 
 }
+
+
+//        //找到总效用增量最大的缓存对
+//        while (!utilityPriorityQueue.isEmpty()&&sumAvailableSpace>0){
+//            ServerDataPair bestServerDataPair = utilityPriorityQueue.poll();
+//            // 缓存对数据未过时
+//            if(bestServerDataPair.sumDeltaUtility==cacheSumUtility.get(bestServerDataPair)){
+//                EdgeServer edgeServer = experimentalEdgeServer.get(serverIdToIndex.get(bestServerDataPair.serverId));
+//                PopularData popularData = experimentalPopularData.get(dataIdToIndex.get(bestServerDataPair.dataId));
+//                // 有空间可以存储
+//                if(edgeServer.getRemainingStorageSpace()>=popularData.getSize()){
+//                    //debug
+//                    debugCacheList.add(bestServerDataPair);
+//                    //缓存这个数据
+//                    edgeServer.cachePopularData(popularData);
+//                    sumAvailableSpace -= popularData.getSize();
+//                    //找到缓存对相关的请求
+//                    HashMap<Request,Double> relatedRequest = cacheRequestUtility.get(bestServerDataPair);
+//                    // 效用更新过的请求
+//                    ArrayList<Request> updatedRequest = new ArrayList<>();
+//                    for(Map.Entry<Request,Double> entry:relatedRequest.entrySet()){
+//                        if(entry.getValue()>nextRequestUtility.get(entry.getKey())){
+//                            updatedRequest.add(entry.getKey());
+//                            nextRequestUtility.put(entry.getKey(),entry.getValue());
+//                        }
+//                    }
+//
+//                    HashSet<Integer> debugDataSet = new HashSet<>();
+//                    for(Request r:updatedRequest){
+//                        debugDataSet.add(r.getPopularDataId());
+//                    }
+//
+//
+//                    for(Request r:updatedRequest){
+//                        ArrayList<ServerDataPair> relatedCache = requestToCache.get(r);
+//                        double bestCacheRequestUtility = relatedRequest.get(r);
+//                        for(ServerDataPair serverDataPair:relatedCache){
+//                            double relatedCacheRequestUtility = cacheRequestUtility.get(serverDataPair).get(r);
+////                            double deltaRequestUtility = nextRequestUtility.get(r)-nowRequestUtility.get(r);
+////                            double promotionUtility = relatedCacheRequestUtility - nowRequestUtility.get(r);
+//                            double csu = cacheSumUtility.get(serverDataPair);
+//                            double nru = nextRequestUtility.get(r);
+//                            double nowRU = nowRequestUtility.get(r);
+//                            double newSumUtility = 0.0;
+////                            if(nowRequestUtility.get(r)==null){
+////                                System.out.println("bbb");
+////                            }
+//                            if(relatedCacheRequestUtility<=nowRequestUtility.get(r)){
+//                                continue;
+//                            }
+//                            if(relatedCacheRequestUtility>nextRequestUtility.get(r)){
+//                                newSumUtility = cacheSumUtility.get(serverDataPair) - (relatedCacheRequestUtility-nextRequestUtility.get(r));
+//                            }else{
+//                                newSumUtility = cacheSumUtility.get(serverDataPair)-(relatedCacheRequestUtility-nowRequestUtility.get(r));
+//                            }
+////                            double newSumUtility = cacheSumUtility.get(serverDataPair)-(Math.min(nextRequestUtility.get(r),relatedCacheRequestUtility)-nowRequestUtility.get(r));
+////                            if(newSumUtility>cacheSumUtility.get(serverDataPair)){
+////                                System.out.println("aaa");
+////                            }
+//                            cacheSumUtility.put(serverDataPair,newSumUtility);
+//                            utilityPriorityQueue.add(new ServerDataPair(serverDataPair.serverId,serverDataPair.dataId,newSumUtility));
+//                        }
+//                    }
+//                    for(Map.Entry<Request,Double> entry:relatedRequest.entrySet()){
+//                        if(entry.getValue()>nowRequestUtility.get(entry.getKey())){
+//                            nowRequestUtility.put(entry.getKey(),entry.getValue());
+//                        }
+//                    }
+//                }
+//            }
+//        }
