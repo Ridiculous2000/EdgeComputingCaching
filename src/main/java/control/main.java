@@ -30,14 +30,14 @@ public class main {
 //        OtherUtils.buildRequestMatrix(0,50);
         //矩阵分解是python实现
         //本文算法
-        OurAlgorithm ourAlgorithm = new OurAlgorithm();
-        //初始化算法所需内容
-        ourAlgorithm.initializeData();
-        ourAlgorithm.findBestDecision(51);
-        System.out.println("adw");
-//        BaseRandom baseRandom=new BaseRandom();
-//        baseRandom.initializeData(51,80);
-//        baseRandom.experiment(51,80);
+//        OurAlgorithm ourAlgorithm = new OurAlgorithm();
+//        //初始化算法所需内容
+//        ourAlgorithm.initializeData();
+//        ourAlgorithm.findBestDecision(51);
+//        System.out.println("adw");
+        BaseRandom baseRandom=new BaseRandom();
+        baseRandom.initializeData(51,80);
+        baseRandom.experiment(51,80);
 //        BaseUCO baseUCO=new BaseUCO();
 //        baseUCO.initializeData(51,80);
 //        baseUCO.experiment(51,80);

@@ -26,11 +26,35 @@ public class BaseUCO {
     //将所有时间戳下的服务器的流行数据按照访问次数进行排序维护
     Map<Integer,Map<Integer,Map<Integer,Integer>>> SortedUCOTable;
     //对于每一个时间戳，都有一个服务器群的存储数据状态
-
     Map<Integer,List<EdgeServer>> edgeCondition;
     //进行实验返回的是<时间戳，<用户id，时延>>
     Map<Integer,Map<Integer,Integer>> userlatency;
+    //缓存决策
+    CachingDecision cachingDecision = new CachingDecision();
     //  Map<Integer,Map<Integer,Double>> dataSimilarityMap;
+    public void initCachingDecision(int beginTimstamp,int endTimestamp){
+        Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
+        List<Request> requests=DBUtils.getAllRequestByTime("request",beginTimstamp,beginTimstamp);
+        //保存第一步的最优解
+        List<EdgeServer> servers=this.edgeCondition.get(beginTimstamp);
+        for(EdgeServer edgeServer:servers){
+            ArrayList<PopularData> dataList =  edgeServer.getCachedDataList();
+            if(cachingResult.get(edgeServer)==null){
+                cachingResult.put(edgeServer,new HashSet<>());
+            }
+            for(PopularData popularData:dataList){
+                cachingResult.get(edgeServer).add(popularData);
+            }
+        }
+        cachingDecision.setCachingState(cachingResult);
+        double maxSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+        double finalSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+        double finalFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
+        double result = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests,400);
+        cachingDecision.setFIndexQoE(finalFIndex);
+        cachingDecision.setOptimizationObjective(result);
+        System.out.println("最终结果 SumQoE: "+finalSumQoE+" —— " + "FIndex: "+finalFIndex + " —— "+"FinalValue: "+result);
+    }
     public void initializeData(int beginTimestamp, int endTimestamp) throws IOException {
         this.experimentalUserList = DBUtils.getAllUser();
         this.experimentalEdgeServer = DBUtils.getAllEdgeServer();
@@ -225,7 +249,7 @@ public class BaseUCO {
                 this.userlatency.get(i).put(request.getUserId(),distance);
             }
         }
-        System.out.println("aaa");
+        initCachingDecision(beginTimestamp,endTimestamp);
     }
     //UCO UCO方法总是选择覆盖请求数据的移动用户最多的边缘服务器来缓存数据，直到所有流行的数据都缓存完毕。
     // CUO方法总是选择覆盖最大用户检索数量的边缘服务器，以便在成本达到预算之前优先缓存数据。

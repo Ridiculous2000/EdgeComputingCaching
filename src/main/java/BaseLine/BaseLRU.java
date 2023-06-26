@@ -122,7 +122,6 @@ public class BaseLRU {
             int timeStamp=rq.getTimestamp();
             userLatency.get(timeStamp).put(rq.getUserId(),distance);
         }
-        System.out.println("aaaaaa");
         return userLatency;
     }
 }

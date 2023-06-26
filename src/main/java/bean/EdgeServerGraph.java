@@ -106,7 +106,6 @@ public class EdgeServerGraph {
             this.edgeServerDistance.put(this.allEdgeServer.get(i).getId(), distanceMap);
         }
       //  return result;
-        System.out.println("aaaa");
     }
    // 就近生成服务器的边
     private void generateEdgeByDistance() {
