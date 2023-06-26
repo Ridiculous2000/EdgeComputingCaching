@@ -1,23 +1,26 @@
 package util;
 
-import bean.EdgeServer;
-import bean.EdgeServerGraph;
-import bean.Request;
-import bean.User;
+import bean.*;
 import our_algorithm.OurAlgorithm;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static our_algorithm.OurAlgorithm.similarityThreshold;
-import static our_algorithm.OurAlgorithm.confidenceThreshold;
-import static our_algorithm.OurAlgorithm.maxSimilarityNum;
+import static our_algorithm.OurAlgorithm.*;
 
 public class AlgorithmUtils {
     //根据传入对象的经纬度，返回距离，单位是 m
     public static HashMap<Integer,HashSet<Integer>> userRequestData = new HashMap<>();
+    public static Map<Integer,Map<Integer,Double>> dataSimilarityMap;
+    public static List<PopularData> experimentalPopularData;
+    public static Map<Integer,double[]> dataVectorMap;
+    public static Map<Integer,Integer> userNearestServer;
+    public static List<User> experimentalUserList;
+    public static List<EdgeServer> experimentalEdgeServer;
+    public static EdgeServerGraph edgeServerGraph;
     static {
         ArrayList<Request> allRequest = (ArrayList<Request>) DBUtils.getAllRequestByTime("request",OurAlgorithm.minTimestamp,OurAlgorithm.maxTimestamp);
         for(Request r:allRequest){
@@ -29,6 +32,24 @@ public class AlgorithmUtils {
             }
             userRequestData.get(r.getPopularDataId()).add(r.getUserId());
         }
+
+        experimentalPopularData = DBUtils.getAllPopularData();
+        ArrayList<Integer> dataIdList = new ArrayList<Integer>();
+        for(PopularData pd:experimentalPopularData){
+            dataIdList.add(pd.getId());
+        }
+        try {
+            dataVectorMap = FileUtils.getDataVectorMap("src/AlgorithmicData/data_matrix.txt",dataIdList);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        dataSimilarityMap = AlgorithmUtils.getDataSimilarityMap(dataVectorMap);
+
+        experimentalUserList = DBUtils.getAllUser();
+        experimentalEdgeServer = DBUtils.getAllEdgeServer();
+        edgeServerGraph = new EdgeServerGraph();
+        edgeServerGraph.initGraph((ArrayList<EdgeServer>) experimentalEdgeServer);
+        userNearestServer = AlgorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
     }
 
     public static double calculateDistance(Object obj1,Object obj2){
@@ -149,6 +170,149 @@ public class AlgorithmUtils {
         }
         return  userNearestServer;
     }
+
+    public static double calculateQoE(int latency) {
+        double sim = 1;
+        double weightValue = latencyWeight*(latency) + Z;
+        return 1 / (1 + Math.exp(-weightValue));
+    }
+
+    //带有软命中的QoE ： sigmoid(H(x))=1/(1+e^-H(x))
+    // H(x) = lw*Latency+s*(1-sim)+Z
+    //参数设置后的结果是 H(x) = -Latency[0-3] + (-6*(1-sim[0-1]))+3
+    /*
+        参数设置理由：
+        (1) Latency=0,sim=0时候[最近获取不相关] H(x)=0+-6+3=-3,QoE = 0.047
+        (2) Latency=3,sim=0时候[云端获取] H(x)=3+ -6 +3 = 0 QoE=0.5
+        (3) Latency=0,sim=0.5时候[就近获取个一般的] H(x)=0+-3 + 3 = 0 QoE=0.5
+     */
+    public static double calculateQoE(int requestDataId, int cacheDataId, int latency) {
+        double sim = 0;
+        if(dataSimilarityMap.get(requestDataId).get(cacheDataId)!=null){
+            sim = dataSimilarityMap.get(requestDataId).get(cacheDataId);
+        }
+        double weightValue = latencyWeight*(latency)+SimWeight*(1 - sim) + Z;
+        return 1 / (1 + Math.exp(-weightValue));
+    }
+
+    //根据缓存情况和当前请求，返回总QoE
+    public static double cacheDecisionSumQoE(CachingDecision cachingDecision,ArrayList<Request> allRequest){
+        Map<EdgeServer, HashSet<PopularData>> cacheState = cachingDecision.getCachingState();
+        double sumQoE = 0;
+        for(Request r:allRequest){
+            double maxQoE = 0;
+            int nearestServerId = userNearestServer.get(r.getUserId());
+//            EdgeServer nearestServer = edgeServerGraph.getAllEdgeServer().get(edgeServerGraph.getEdgeServerIdToIndex().get(nearestServerId));
+            HashMap<Integer,ArrayList<EdgeServer>> connectedServer = edgeServerGraph.getDistanceRank().get(nearestServerId);
+            for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
+                int lantency = entry.getKey();
+                if(lantency>maxHop){
+                    lantency = 3;
+                    maxQoE = Math.max(maxQoE,calculateQoE(3));
+                    continue;
+                }
+                ArrayList<PopularData>  allPopularData = new ArrayList<>();
+                ArrayList<EdgeServer> serverArrayList = entry.getValue();
+                for(EdgeServer edgeServer:serverArrayList){
+                    for(PopularData popularData:cacheState.get(edgeServer)){
+                        maxQoE = Math.max(maxQoE,calculateQoE(r.getPopularDataId(),popularData.getId(),lantency));
+                    }
+                }
+            }
+            sumQoE += maxQoE;
+        }
+        cachingDecision.setSumQoE(sumQoE);
+        return sumQoE;
+    }
+
+    //根据缓存情况和请求，返回QoE的公平系数
+    public static double cacheDecisionFIndex(CachingDecision cachingDecision,ArrayList<Request> allRequest){
+        Map<EdgeServer, HashSet<PopularData>> cacheState = cachingDecision.getCachingState();
+        ArrayList<Double> userQoE = new ArrayList<>();
+        for(Request r:allRequest){
+            double maxQoE = 0;
+            int nearestServerId = userNearestServer.get(r.getUserId());
+            HashMap<Integer,ArrayList<EdgeServer>> connectedServer = edgeServerGraph.getDistanceRank().get(nearestServerId);
+            for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
+                int lantency = entry.getKey();
+                if(lantency>maxHop){
+                    lantency = 3;
+                    maxQoE = Math.max(maxQoE,calculateQoE(3));
+                    continue;
+                }
+                ArrayList<PopularData>  allPopularData = new ArrayList<>();
+                ArrayList<EdgeServer> serverArrayList = entry.getValue();
+                for(EdgeServer edgeServer:serverArrayList){
+                    for(PopularData popularData:cacheState.get(edgeServer)){
+                        maxQoE = Math.max(maxQoE,calculateQoE(r.getPopularDataId(),popularData.getId(),lantency));
+                    }
+                }
+            }
+            userQoE.add(maxQoE);
+        }
+        double FIndex = 1-2*calculateStandardDeviation(userQoE)/(1 / (1 + Math.exp(-6)) - 1 / (1 + Math.exp(6)));
+        cachingDecision.setFIndexQoE(FIndex);
+        return FIndex;
+    }
+
+
+    //根据缓存情况和请求，返回QoE的公平系数
+    public static double cacheDecisionFinalValue(CachingDecision cachingDecision,ArrayList<Request> allRequest,double maxSumQoE){
+       double FIndex = cacheDecisionFIndex(cachingDecision,allRequest);
+       double sumQoE = cacheDecisionSumQoE(cachingDecision,allRequest);
+       return (FIndexWeight*FIndex + SumQoEWeight*(sumQoE/maxSumQoE))/(FIndexWeight+SumQoEWeight);
+    }
+
+    //根据存储情况和请求，返回各个用户请求的QoE【目前设置中，一个用户每个时间段只发出一个请求，所以也是用户QoE】
+    public static HashMap<Request,Double> cacheDecisionAllUserQoE(CachingDecision cachingDecision,ArrayList<Request> allRequest){
+        Map<EdgeServer, HashSet<PopularData>> cacheState = cachingDecision.getCachingState();
+        HashMap<Request,Double> userQoE = new HashMap<>();
+        for(Request r:allRequest){
+            double maxQoE = 0;
+            int nearestServerId = userNearestServer.get(r.getUserId());
+            HashMap<Integer,ArrayList<EdgeServer>> connectedServer = edgeServerGraph.getDistanceRank().get(nearestServerId);
+            for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
+                int lantency = entry.getKey();
+                if(lantency>maxHop){
+                    lantency = 3;
+                    maxQoE = Math.max(maxQoE,calculateQoE(3));
+                    continue;
+                }
+                ArrayList<PopularData>  allPopularData = new ArrayList<>();
+                ArrayList<EdgeServer> serverArrayList = entry.getValue();
+                for(EdgeServer edgeServer:serverArrayList){
+                    for(PopularData popularData:cacheState.get(edgeServer)){
+                        maxQoE = Math.max(maxQoE,calculateQoE(r.getPopularDataId(),popularData.getId(),lantency));
+                    }
+                }
+            }
+            userQoE.put(r,maxQoE);
+        }
+        return userQoE;
+
+    }
+
+
+    //返回序列标准差
+    public static double calculateStandardDeviation(ArrayList<Double> numbers) {
+        int size = numbers.size();
+        if (size < 2) {
+            throw new IllegalArgumentException("ArrayList should have at least 2 elements.");
+        }
+        double sum = 0.0;
+        for (Double number : numbers) {
+            sum += number;
+        }
+        double mean = sum / size;
+        double squaredDiffSum = 0.0;
+        for (Double number : numbers) {
+            double diff = number - mean;
+            squaredDiffSum += (diff * diff);
+        }
+        double variance = squaredDiffSum / size;
+        return Math.sqrt(variance);
+    }
+
     //根据提供的服务器id，输入为一个服务器列表，返回该服务器对象
     public static EdgeServer findEdgeServerById(List<EdgeServer> es,int id){
         EdgeServer find=null;

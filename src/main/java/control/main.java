@@ -1,7 +1,5 @@
 package control;
 
-import BaseLine.BaseRandom;
-import BaseLine.BaseUCO;
 import our_algorithm.OurAlgorithm;
 
 import java.io.IOException;

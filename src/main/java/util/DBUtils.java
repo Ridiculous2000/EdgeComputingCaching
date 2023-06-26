@@ -8,9 +8,11 @@ import bean.User;
 import java.sql.*;
 import java.util.*;
 
+
 /*
  * JDBC工具类
  * */
+// 此文件已经被忽略，后续不在这个文件进行修改
 public class DBUtils {
     private static String driverClass;
     private static String url;
@@ -189,4 +191,7 @@ public class DBUtils {
         }
         return userSet;
     }
+
+
+
 }

@@ -214,6 +214,12 @@ public class EdgeServerGraph {
                         }
                         distanceRank.get(e1.getId()).get(d).add(e2);
                     }
+                }else{
+                    if(distanceRank.get(e1.getId())==null){
+                        distanceRank.put(e1.getId(),new HashMap<>());
+                    }
+                    distanceRank.get(e1.getId()).put(0,new ArrayList<EdgeServer>());
+                    distanceRank.get(e1.getId()).get(0).add(e2);
                 }
             }
         }
