@@ -105,7 +105,7 @@ public class BaseRandom {
             double result = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests,400);
             cachingDecision.setFIndexQoE(finalFIndex);
             cachingDecision.setOptimizationObjective(result);
-            System.out.println("最终结果第i时间下的 SumQoE: "+finalSumQoE+" —— " + "FIndex: "+finalFIndex + " —— "+"FinalValue: "+result);
+            System.out.println("Timestamp"+i+" SumQoE: "+finalSumQoE + " FIndex: "+finalFIndex +"FinalValue: "+result);
 
         }
          }

@@ -33,27 +33,29 @@ public class BaseUCO {
     CachingDecision cachingDecision = new CachingDecision();
     //  Map<Integer,Map<Integer,Double>> dataSimilarityMap;
     public void initCachingDecision(int beginTimstamp,int endTimestamp){
-        Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
-        List<Request> requests=DBUtils.getAllRequestByTime("request",beginTimstamp,beginTimstamp);
-        //保存第一步的最优解
-        List<EdgeServer> servers=this.edgeCondition.get(beginTimstamp);
-        for(EdgeServer edgeServer:servers){
-            ArrayList<PopularData> dataList =  edgeServer.getCachedDataList();
-            if(cachingResult.get(edgeServer)==null){
-                cachingResult.put(edgeServer,new HashSet<>());
+        for(int i=beginTimstamp;i<=endTimestamp;i++){
+            Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
+            List<Request> requests=DBUtils.getAllRequestByTime("request",i,i);
+            //保存第一步的最优解
+            List<EdgeServer> servers=this.edgeCondition.get(beginTimstamp);
+            for(EdgeServer edgeServer:servers){
+                ArrayList<PopularData> dataList =  edgeServer.getCachedDataList();
+                if(cachingResult.get(edgeServer)==null){
+                    cachingResult.put(edgeServer,new HashSet<>());
+                }
+                for(PopularData popularData:dataList){
+                    cachingResult.get(edgeServer).add(popularData);
+                }
             }
-            for(PopularData popularData:dataList){
-                cachingResult.get(edgeServer).add(popularData);
-            }
+            cachingDecision.setCachingState(cachingResult);
+            double maxSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+            double finalSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+            double finalFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
+            double result = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests,400);
+            cachingDecision.setFIndexQoE(finalFIndex);
+            cachingDecision.setOptimizationObjective(result);
+            System.out.println("Timestamp"+i+" SumQoE: "+finalSumQoE + " FIndex: "+finalFIndex +"FinalValue: "+result);
         }
-        cachingDecision.setCachingState(cachingResult);
-        double maxSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
-        double finalSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
-        double finalFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
-        double result = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests,400);
-        cachingDecision.setFIndexQoE(finalFIndex);
-        cachingDecision.setOptimizationObjective(result);
-        System.out.println("最终结果 SumQoE: "+finalSumQoE+" —— " + "FIndex: "+finalFIndex + " —— "+"FinalValue: "+result);
     }
     public void initializeData(int beginTimestamp, int endTimestamp) throws IOException {
         this.experimentalUserList = DBUtils.getAllUser();
