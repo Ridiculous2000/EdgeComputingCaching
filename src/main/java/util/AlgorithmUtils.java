@@ -199,6 +199,7 @@ public class AlgorithmUtils {
     public static double cacheDecisionSumQoE(CachingDecision cachingDecision,ArrayList<Request> allRequest){
         Map<EdgeServer, HashSet<PopularData>> cacheState = cachingDecision.getCachingState();
         double sumQoE = 0;
+        ArrayList<Double> rql = new ArrayList<Double>();
         for(Request r:allRequest){
             double maxQoE = 0;
             int nearestServerId = userNearestServer.get(r.getUserId());
@@ -207,7 +208,7 @@ public class AlgorithmUtils {
             for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
                 int lantency = entry.getKey();
                 if(lantency>maxHop){
-                    lantency = 3;
+                    lantency = maxHop+1;
                     maxQoE = Math.max(maxQoE,calculateQoE(3));
                     continue;
                 }

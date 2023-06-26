@@ -1,6 +1,5 @@
 package bean;
 
-import sun.awt.geom.AreaOp;
 import util.AlgorithmUtils;
 import util.OtherUtils;
 
@@ -14,6 +13,7 @@ public class EdgeServerGraph {
     HashMap<Integer,Integer> edgeServerIdToIndex = new HashMap<>();
     HashMap<Integer, List<EdgeServer>> serverGraph = new HashMap<>();
     Map<Integer,Map<Integer,List<Integer>>> edgeServerDistance=new HashMap<>();
+    //HashMap<Integer,Integer> indexToEdgeServerId = new HashMap<>();
     private static final int INF = Integer.MAX_VALUE;
     int[][] everyDistance;
     HashMap<Integer,HashMap<Integer,ArrayList<EdgeServer>>> distanceRank;

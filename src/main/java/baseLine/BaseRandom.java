@@ -1,12 +1,10 @@
-package BaseLine;
+package baseLine;
 
 import bean.*;
-import sun.awt.geom.AreaOp;
 import util.AlgorithmUtils;
 import util.DBUtils;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class BaseRandom {
@@ -83,10 +81,9 @@ public class BaseRandom {
         return pd;
     }
     public void initCachingDecision(int beginTimstamp,int endTimestamp){
-        Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
-
         //保存第一步的最优解
         for(int i=beginTimstamp;i<=endTimestamp;i++){
+            Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
             List<Request> requests=DBUtils.getAllRequestByTime("request",i,i);
             List<EdgeServer> servers=this.edgeCondition.get(i);
             for(EdgeServer edgeServer:servers){

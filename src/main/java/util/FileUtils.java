@@ -1,5 +1,8 @@
 package util;
 
+import bean.Request;
+import bean.User;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +29,65 @@ public class FileUtils {
         }
         return dataList;
     }
+
+    public static void writeRequestSequenceToFile(String filePath){
+        List<User> allUser = DBUtils.getAllUser();
+        HashMap<Integer,ArrayList<Request>> requestByTime = DBUtils.getRequestByTime("request",0,50);
+        HashMap<Integer,int[]> userRequestHistory = new HashMap<>();
+        for(User user:allUser){
+            userRequestHistory.put(user.getId(),new int[50]);
+        }
+        for(Map.Entry<Integer,ArrayList<Request>> entry:requestByTime.entrySet()){
+            ArrayList<Request> requestList = entry.getValue();
+            for(Request request:requestList){
+                int userId = request.getUserId();
+                int dataId = request.getPopularDataId();
+                userRequestHistory.get(userId)[entry.getKey()-1] = dataId;
+            }
+        }
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            for (Map.Entry<Integer, int[]> entry : userRequestHistory.entrySet()) {
+                int key = entry.getKey();
+                int[] values = entry.getValue();
+                StringBuilder lineBuilder = new StringBuilder();
+                lineBuilder.append(key).append(":");
+                for (int value : values) {
+                    lineBuilder.append(value).append(",");
+                }
+                lineBuilder.deleteCharAt(lineBuilder.length() - 1);
+                String line = lineBuilder.toString();
+                writer.write(line);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public static HashMap<Integer, ArrayList<Integer>> readUserBehaviorFromFile(String fileName) {
+        HashMap<Integer, ArrayList<Integer>> resultMap = new HashMap<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(":");
+                if (parts.length == 2) {
+                    int key = Integer.parseInt(parts[0]);
+                    String[] valuesStr = parts[1].split(",");
+                    ArrayList<Integer> values = new ArrayList<>();
+                    for (String valueStr : valuesStr) {
+                        values.add(Integer.parseInt(valueStr));
+                    }
+                    resultMap.put(key, values);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + e.getMessage());
+        }
+        return resultMap;
+    }
+
+
 
     //–¥»Îæÿ’Û
     public static void writeMatrixToFile(int[][] matrix, String filePath) {

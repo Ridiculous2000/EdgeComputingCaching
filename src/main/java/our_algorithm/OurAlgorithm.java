@@ -21,8 +21,8 @@ public class OurAlgorithm {
     //最大跳数
     public static int maxHop = 2;
     //参数设置和最大跳数严重相关
-    public static double latencyWeight = -1;
-    public static double SimWeight = -6;
+    public static double latencyWeight = -1.5;
+    public static double SimWeight = -4;
 //    public static double delayThreshold = 1;
 //    public static double simThreshold = 1;
     public static double SumQoEWeight = 2;
@@ -134,7 +134,6 @@ public class OurAlgorithm {
         dataSimilarityMap = AlgorithmUtils.getDataSimilarityMap(dataVectorMap);
         userNearestServer = AlgorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
     }
-
 
     public CachingDecision findBestDecision(int timestamp){
         //初始化数据
