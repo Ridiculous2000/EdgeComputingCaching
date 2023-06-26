@@ -13,7 +13,6 @@ public class EdgeServerGraph {
     ArrayList<EdgeServer> allEdgeServer = new ArrayList<>();
     HashMap<Integer,Integer> edgeServerIdToIndex = new HashMap<>();
     HashMap<Integer, List<EdgeServer>> serverGraph = new HashMap<>();
-
     Map<Integer,Map<Integer,List<Integer>>> edgeServerDistance=new HashMap<>();
     private static final int INF = Integer.MAX_VALUE;
     int[][] everyDistance;

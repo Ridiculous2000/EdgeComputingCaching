@@ -25,7 +25,7 @@ public class OurAlgorithm {
     public static double SimWeight = -6;
 //    public static double delayThreshold = 1;
 //    public static double simThreshold = 1;
-    public static double SumQoEWeight = 1;
+    public static double SumQoEWeight = 2;
     public static double FIndexWeight = 1;
     public static double Z = 3;
     List<User> experimentalUserList;

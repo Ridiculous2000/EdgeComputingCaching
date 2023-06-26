@@ -18,8 +18,10 @@ public class BaseLRU {
     //用户最近的服务器
     Map<Integer,Integer> useredge;
     //服务器覆盖的用户检索数量 存储形式为：<时间戳,<边缘服务器id，该服务器的在这段时间内所覆盖用户的检索数量>>
+    //丢弃最少使用的内容并缓存最近请求的内容
     Map<Integer,Map<Integer,Integer>> edgeCover;
     //  Map<Integer,Map<Integer,Double>> dataSimilarityMap;
+    //总是在缓存满时用新请求的视频替换最近请求最少的视频
     public void initializeData(int beginTimestamp,int endTimestamp) throws IOException {
         this.experimentalUserList = DBUtils.getAllUser();
         this.experimentalEdgeServer = DBUtils.getAllEdgeServer();

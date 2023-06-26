@@ -99,6 +99,7 @@ public class BaseRandom {
 
             }
         }
+        System.out.println("aa");
         return userLatency;
     }
 

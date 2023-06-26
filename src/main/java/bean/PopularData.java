@@ -6,7 +6,9 @@ public class PopularData {
     int id = -1000;
     int size = -1000;
 
+    public PopularData(){
 
+    }
     public PopularData(int id, int size) {
         this.id = id;
         this.size = size;
@@ -14,10 +16,6 @@ public class PopularData {
 
     public PopularData(int id) {
         this.id = id;
-    }
-
-    public PopularData() {
-
     }
 
     public int getId() {
