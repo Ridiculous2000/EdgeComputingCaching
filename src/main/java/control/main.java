@@ -12,9 +12,19 @@ import java.util.HashMap;
 
 public class main {
 
-    public static int minTimestamp = 0;
-    public static int maxTimestamp = 50;
+    public static int BeginTimestamp = 51;
+    public static int EndTimestamp = 80;
+    public static int ExperimentalServer = 40;
+    public static int ExperimentalUser = 400;
+    public static int ExperimentalData = 200;
+    public static int RequestNumForUser = 1;
+    public static int maxHop = 2;
+    public static double latencyWeight = -1.5;
+    public static double SimWeight = -4;
+    
+
     public static void main(String[] args) throws IOException {
+
         //导入数据集基本数据
 //        InitBasicData initBasicData = new InitBasicData();
 //        initBasicData.insertBasicUser();
@@ -24,7 +34,7 @@ public class main {
 //        generateData.addExperimentalUser(400);
 //        generateData.addExperimentalServer(40);
 //        generateData.newPopularData(100,3);
-//        generateData.newUserDataProbability(1.5);
+//        generateData.newUserDataProbability(2);
 //        ArrayList<Integer> timestampList = new ArrayList<Integer>();
 //        for(int i=1;i<=80;i++){
 //            timestampList.add(i);
@@ -40,19 +50,21 @@ public class main {
         ourAlgorithm.findBestDecision(51);
         FileUtils.writeRequestSequenceToFile("src/AlgorithmicData/user_history.txt");
         HashMap<Integer, ArrayList<Integer>> requestByTime = FileUtils.readUserBehaviorFromFile("src/AlgorithmicData/user_history.txt");
-        System.out.println("   =================    ");
-        BaseRandom baseRandom=new BaseRandom();
-        baseRandom.initializeData(51,53);
-        baseRandom.experiment(51,53);
-        System.out.println("   =================    ");
-        BaseUCO baseUCO=new BaseUCO();
-        baseUCO.initializeData(51,53);
-        baseUCO.experiment(51,53);
-//
-        System.out.println("   =================    ");
-        BaseLRU baseLRU=new BaseLRU();
-        baseLRU.initializeData(51,53);
-        baseLRU.experiment(51,53);
+
+
+//        System.out.println("   =================    ");
+//        BaseRandom baseRandom=new BaseRandom();
+//        baseRandom.initializeData(51,53);
+//        baseRandom.experiment(51,53);
+//        System.out.println("   =================    ");
+//        BaseUCO baseUCO=new BaseUCO();
+//        baseUCO.initializeData(51,53);
+//        baseUCO.experiment(51,53);
+
+//        System.out.println("   =================    ");
+//        BaseLRU baseLRU=new BaseLRU();
+//        baseLRU.initializeData(51,53);
+//        baseLRU.experiment(51,53);
 
     }
 }
