@@ -26,6 +26,7 @@ public class BaseUCO {
     //将所有时间戳下的服务器的流行数据按照访问次数进行排序维护
     Map<Integer,Map<Integer,Map<Integer,Integer>>> SortedUCOTable;
     //对于每一个时间戳，都有一个服务器群的存储数据状态
+
     Map<Integer,List<EdgeServer>> edgeCondition;
     //进行实验返回的是<时间戳，<用户id，时延>>
     Map<Integer,Map<Integer,Integer>> userlatency;
