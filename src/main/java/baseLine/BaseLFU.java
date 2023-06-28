@@ -6,8 +6,8 @@ import util.DBUtils;
 
 import java.io.IOException;
 import java.util.*;
-//GCO方法实现
-public class BaseLRU {
+
+public class BaseLFU {
     List<User> experimentalUserList;
     List<EdgeServer> experimentalEdgeServer;
     List<PopularData> experimentalPopularData;
@@ -34,7 +34,7 @@ public class BaseLRU {
             Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
             List<Request> requests=DBUtils.getAllRequestByTime("request",i,i);
             //保存第一步的最优解
-            List<EdgeServer> servers=this.edgeCondition.get(beginTimstamp);
+            List<EdgeServer> servers=this.edgeCondition.get(i);
             for(EdgeServer edgeServer:servers){
                 ArrayList<PopularData> dataList =  edgeServer.getCachedDataList();
                 if(cachingResult.get(edgeServer)==null){
@@ -58,7 +58,7 @@ public class BaseLRU {
         this.experimentalUserList = DBUtils.getAllUser();
         this.experimentalEdgeServer = DBUtils.getAllEdgeServer();
         this.experimentalPopularData = DBUtils.getAllPopularData();
-        //  this.Request = DBUtils.getAllRequestByTime("request",51,80);
+      //  this.Request = DBUtils.getAllRequestByTime("request",51,80);
         this.useredge = AlgorithmUtils.getUserNearestServer(experimentalUserList, experimentalEdgeServer);
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
@@ -68,7 +68,7 @@ public class BaseLRU {
     }
     //对服务器访问表的初始化
     public void initUCOTable(int beginTimestamp,int endTimestamp){
-        UCOTable=new HashMap<Integer, Map<Integer, Map<Integer, Integer>>>();
+        this.UCOTable=new HashMap<Integer, Map<Integer, Map<Integer, Integer>>>();
         for(int i=beginTimestamp;i<=endTimestamp;i++){
             Map<Integer,Map<Integer,Integer>> edgeCondition=new HashMap<Integer,Map<Integer,Integer>>();
             for(EdgeServer es:this.experimentalEdgeServer){
@@ -78,66 +78,24 @@ public class BaseLRU {
                 }
                 edgeCondition.put(es.getId(),pdcount);
             }
-            UCOTable.put(i,edgeCondition);
+            this.UCOTable.put(i,edgeCondition);
         }
     }
     public void keepUCOTable(int beginTimestamp,int endTimestamp){
         for(int i=beginTimestamp;i<=endTimestamp;i++){
-            //存储在i时间戳前该数据被多少个用户访问过
-            //Map<sid,Map<pid,HashSet<uid>>>
-            Map<Integer,Map<Integer,HashSet<Integer>>> reqdata=new HashMap<Integer, Map<Integer,HashSet<Integer>>>();
-            for(EdgeServer es:this.experimentalEdgeServer){
-                Map<Integer,HashSet<Integer>> list=new HashMap<Integer, HashSet<Integer>>();
-                for(PopularData pd:this.experimentalPopularData){
-                    HashSet<Integer> hslist=new HashSet<Integer>();
-                    list.put(pd.getId(),hslist);
-                }
-                reqdata.put(es.getId(),list);
-            }
             List<Request> requests=new ArrayList<Request>();
             requests=DBUtils.getAllRequestByTime("request",1,i-1);
             for(Request request:requests){
                 int uid=request.getUserId();
                 int sid=useredge.get(uid);
                 int pid=request.getPopularDataId();
-                reqdata.get(sid).get(pid).add(uid);
-//                int count=this.UCOTable.get(i).get(sid).get(pid);
-//                count++;
-//                UCOTable.get(i).get(sid).put(pid,count);
-            }
-            //map<时间戳，map<边缘服务器id,该服务器接收的请求中各个数据的访问次数map<数据id，访问次数>>>
-            for (Map.Entry<Integer, Map<Integer, HashSet<Integer>>> entry1 : reqdata.entrySet()) {
-                int sid1 = entry1.getKey();
-                Map<Integer, HashSet<Integer>> innerMap1 = entry1.getValue();
-
-                for (Map.Entry<Integer, HashSet<Integer>> entry2 : innerMap1.entrySet()) {
-                    int pid1 = entry2.getKey();
-                    HashSet<Integer> set = entry2.getValue();
-                    int size = set.size();
-
-                    // 修改data中对应的count值
-                    if (this.UCOTable.containsKey(i)) {
-                        Map<Integer, Map<Integer, Integer>> innerMap2 = this.UCOTable.get(i);
-                        if (innerMap2.containsKey(sid1)) {
-                            Map<Integer, Integer> innerMap3 = innerMap2.get(sid1);
-                            innerMap3.put(pid1, size);
-                        } else {
-                            Map<Integer, Integer> innerMap3 = new HashMap<>();
-                            innerMap3.put(pid1, size);
-                            innerMap2.put(sid1, innerMap3);
-                        }
-                    } else {
-                        Map<Integer, Map<Integer, Integer>> innerMap2 = new HashMap<>();
-                        Map<Integer, Integer> innerMap3 = new HashMap<>();
-                        innerMap3.put(pid1, size);
-                        innerMap2.put(sid1, innerMap3);
-                        this.UCOTable.put(i, innerMap2);
-                    }
-                }
+                int count=this.UCOTable.get(i).get(sid).get(pid);
+                count++;
+                UCOTable.get(i).get(sid).put(pid,count);
             }
         }
         this.SortedUCOTable=sortUCOTable(UCOTable);
-        // sortMapByCountDescending();
+       // sortMapByCountDescending();
     }
     //对流行数据访问次数表进行排序
     public static Map<Integer, Map<Integer, Map<Integer, Integer>>> sortUCOTable(
@@ -292,4 +250,152 @@ public class BaseLRU {
         }
         initCachingDecision(beginTimestamp,endTimestamp);
     }
+    //UCO UCO方法总是选择覆盖请求数据的移动用户最多的边缘服务器来缓存数据，直到所有流行的数据都缓存完毕。
+    // CUO方法总是选择覆盖最大用户检索数量的边缘服务器，以便在成本达到预算之前优先缓存数据。
+    //初始化edgeCover
+    ////服务器覆盖的用户检索数量 存储形式为：<时间戳,<边缘服务器id，该服务器的在这段时间内所覆盖用户的检索数量>>
+//    public void initUCO(int beginTimestamp,int endTimestamp) {
+//        this.edgeCover=new HashMap<Integer, Map<Integer, Integer>>();
+//        for (int i = beginTimestamp; i <=endTimestamp; i++) {
+//            //userLatency.put(i,new HashMap<Integer, Integer>());
+//            Map<Integer, Integer> searchNum = new HashMap<Integer, Integer>();
+//            for (EdgeServer server : this.experimentalEdgeServer) {
+//                searchNum.put(server.getId(), 0);
+//            }
+//            this.edgeCover.put(i,searchNum);
+//        }
+//        List<Request> request=DBUtils.getAllRequestByTime("request", 1, endTimestamp);
+//        for(int i=beginTimestamp;i<=endTimestamp;i++)
+//        {
+//            for(Request rq:request){
+//                if(rq.getTimestamp()<i){
+//                    int serverid=useredge.get(rq.getUserId());
+//                    int num=edgeCover.get(i).get(serverid);
+//                    edgeCover.get(i).put(serverid,++num);
+//                }
+//            }
+//        }
+//    }
+//对edgeCover<Serverid,RequestNum>进行排序，获得一个倒序的存放ServerId的List
+
+//    public Map<Integer,List<Integer>> sort(Map<Integer, Map<Integer, Integer>> ec) {
+//        Map<Integer, List<Integer>> mergedMap = new HashMap<>();
+//        // 遍历 ec 的键值对，对于每个 sid，根据 num 的降序排列创建一个新的 List<Integer> 对象
+//        for (Map.Entry<Integer, Map<Integer, Integer>> entry : ec.entrySet()) {
+//            int time = entry.getKey();
+//            Map<Integer, Integer> innerMap = entry.getValue();
+//
+//            List<Integer> sortedSidList = innerMap.entrySet()
+//                    .stream()
+//                    .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+//                    .map(Map.Entry::getKey)
+//                    .collect(Collectors.toList());
+//
+//            mergedMap.put(time, sortedSidList);
+//        }
+//
+//        return mergedMap;
+//    }
+//根据前beginTimestamp的历史进行UCO策略缓存
+//Map<Integer,List<EdgeServer>> edgeCondition;
+//服务器覆盖的用户检索数量 存储形式为：<时间戳,<边缘服务器id，该服务器的在这段时间内所覆盖用户的检索数量>>
+//即从该时间戳开始前所有的请求都被检索
+//Map<Integer, Map<Integer, Integer>> edgeCover;
+//    public void UCOCaching(int beginTimestamp,int endTimestamp) {
+//        initUCO(beginTimestamp,endTimestamp);
+//        Map<Integer,List<Integer>> sortedList = sort(this.edgeCover);
+//        this.edgeCondition=new HashMap<Integer,List<EdgeServer>>();
+////        for(int i=beginTimestamp;i<=endTimestamp;i++){
+////            this.edgeCondition.put(i,new ArrayList<EdgeServer>());
+////        }
+//        List<PopularData> pds = new ArrayList<PopularData>();
+//        for(int i=beginTimestamp;i<=endTimestamp;i++){
+//            int count = 0;
+//            List<EdgeServer> inputes=new ArrayList<EdgeServer>();
+//            List<Integer> sorted=sortedList.get(i);
+//            for (Integer server : sorted) {
+//                if (count < this.experimentalPopularData.size()) {
+//                    EdgeServer es = AlgorithmUtils.findEdgeServerById(this.experimentalEdgeServer, server);
+//                    PopularData pd = this.experimentalPopularData.get(count++);
+//                    while (es.getRemainingStorageSpace() >= pd.getSize()) {
+//                        pds.add(pd);
+//                        es.setRemainingStorageSpace(es.getRemainingStorageSpace() - pd.getSize());
+//                        if (count == this.experimentalPopularData.size())
+//                            break;
+//                        else pd = this.experimentalPopularData.get(count++);
+//                    }
+//                    es.setCachedDataList((ArrayList<PopularData>) pds);
+//                    pds = new ArrayList<PopularData>();
+//                    inputes.add(es);
+//                } else break;
+//            }
+//            this.edgeCondition.put(i,inputes);
+//        }
+//        System.out.println("aaaaa");
+//    }
+
+    //进行实验返回的是<时间戳，<用户id，时延>>
+//    public Map<Integer, Map<Integer, Integer>> experiment(int beginTimestamp, int endTimestamp) throws IOException {
+//        this.Request=DBUtils.getAllRequestByTime("request", beginTimestamp, endTimestamp);
+//        List<Integer> timePeriod = new ArrayList<Integer>();
+//        Map<Integer, Map<Integer, Integer>> userLatency = new HashMap<Integer, Map<Integer, Integer>>();
+//        initUCO(beginTimestamp,endTimestamp);
+//        UCOCaching(beginTimestamp,endTimestamp);
+//        for (int i = beginTimestamp; i <= endTimestamp; i++) {
+//            timePeriod.add(i);
+//            // edgeServerIdToIndex.put(allEdgeServer.get(i).getId(),i);
+//            userLatency.put(i, new HashMap<Integer, Integer>());
+//            Map<Integer,Integer> ul=calUserLatency(this.Request,i);
+//            userLatency.put(i,ul);
+//        }
+//        for (Map.Entry<Integer, Map<Integer, Integer>> entry : userLatency.entrySet()) {
+//            int userId = entry.getKey();
+//            Map<Integer, Integer> latencyMap = entry.getValue();
+//
+//            for (Map.Entry<Integer, Integer> latencyEntry : latencyMap.entrySet()) {
+//                int requestId = latencyEntry.getKey();
+//                int latency = latencyEntry.getValue();
+//
+//                System.out.println(": " + userId + ", Request ID: " + requestId + ", Latency: " + latency);
+//            }
+//        }
+//        return userLatency;
+//    }
+    //给定所有服务器的存储数据情况和所有的请求情况，返回某一时间戳下的所有<用户id,时延>结果
+//    public Map<Integer,Integer> calUserLatency(List<Request> request,int timestamp){
+//        Map<Integer, Integer> userLatency = new HashMap<Integer, Integer>();
+//        for(Request rq:request){
+//            if(rq.getTimestamp()==timestamp){
+//                int serverId=useredge.get(rq.getUserId());
+//                int distance=0;
+//                int findsid=0;
+//                //edgeServerDistance
+//                //返回为<边缘服务器id，<距离，距这个边缘服务器距离的服务器id列表>>
+//                //Map<Integer,Map<Integer,List<Integer>>>
+//                for(Map.Entry<Integer, List<Integer>> distanceList:edgeServerGraph.getEdgeServerDistance().get(serverId).entrySet()){
+//                    distance=distanceList.getKey();
+//                    List<Integer> serverlist=distanceList.getValue();
+//                    for(Integer sid:serverlist){
+//                        //ArrayList<PopularData> cachedDataList
+//                        EdgeServer s=edgeServerGraph.idFindServer(sid);
+//                        for(PopularData pd:s.getCachedDataList()){
+//                            if(pd.getId()==rq.getPopularDataId())
+//                                findsid=sid;
+//                            break;
+//                        }
+//                        if(findsid!=0)
+//                            break;
+//                    }
+//                    if(findsid!=0)
+//                        break;
+//                }
+//                if(distance>=edgeServerGraph.getEdgeServerDistance().get(serverId).size()&&findsid==0)
+//                    distance=100;
+//                userLatency.put(rq.getUserId(),distance);
+//            }
+//
+//        }
+//        // System.out.println("aaaaaa");
+//        return userLatency;
+//    }
 }

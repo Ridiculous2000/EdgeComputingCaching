@@ -53,7 +53,7 @@ public class BaseRandom {
             }
             //每次随机找10次数据填入边缘服务器，若无法填满则停止添加
             int count=0;
-            while(server.getRemainingStorageSpace()>=1&&count<10&&experimentalPopularData.size()>0){
+            while(server.getRemainingStorageSpace()>=1&&count<5&&experimentalPopularData.size()>0){
 
                 int randomIndex =random.nextInt(experimentalPopularData.size());
                 PopularData pd=experimentalPopularData.get(randomIndex);
@@ -103,7 +103,6 @@ public class BaseRandom {
             cachingDecision.setFIndexQoE(finalFIndex);
             cachingDecision.setOptimizationObjective(result);
             System.out.println("Timestamp"+i+" SumQoE: "+finalSumQoE + " FIndex: "+finalFIndex +"FinalValue: "+result);
-
         }
          }
     //进行实验返回的是<时间戳，<用户id，时延>>
