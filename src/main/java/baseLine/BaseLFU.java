@@ -7,7 +7,7 @@ import util.DBUtils;
 import java.io.IOException;
 import java.util.*;
 
-public class BaseUCO {
+public class BaseLFU {
     List<User> experimentalUserList;
     List<EdgeServer> experimentalEdgeServer;
     List<PopularData> experimentalPopularData;
@@ -35,7 +35,7 @@ public class BaseUCO {
             Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
             List<Request> requests=DBUtils.getAllRequestByTime("request",i,i);
             //保存第一步的最优解
-            List<EdgeServer> servers=this.edgeCondition.get(beginTimstamp);
+            List<EdgeServer> servers=this.edgeCondition.get(i);
             for(EdgeServer edgeServer:servers){
                 ArrayList<PopularData> dataList =  edgeServer.getCachedDataList();
                 if(cachingResult.get(edgeServer)==null){
@@ -74,7 +74,7 @@ public class BaseUCO {
     }
     //对服务器访问表的初始化
     public void initUCOTable(int beginTimestamp,int endTimestamp){
-        UCOTable=new HashMap<Integer, Map<Integer, Map<Integer, Integer>>>();
+        this.UCOTable=new HashMap<Integer, Map<Integer, Map<Integer, Integer>>>();
         for(int i=beginTimestamp;i<=endTimestamp;i++){
             Map<Integer,Map<Integer,Integer>> edgeCondition=new HashMap<Integer,Map<Integer,Integer>>();
             for(EdgeServer es:this.experimentalEdgeServer){
@@ -84,7 +84,7 @@ public class BaseUCO {
                 }
                 edgeCondition.put(es.getId(),pdcount);
             }
-            UCOTable.put(i,edgeCondition);
+            this.UCOTable.put(i,edgeCondition);
         }
     }
     public void keepUCOTable(int beginTimestamp,int endTimestamp){

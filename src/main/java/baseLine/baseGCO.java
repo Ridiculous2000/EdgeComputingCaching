@@ -7,7 +7,7 @@ import util.DBUtils;
 import java.io.IOException;
 import java.util.*;
 //GCO方法实现
-public class BaseLRU {
+public class baseGCO {
     List<User> experimentalUserList;
     List<EdgeServer> experimentalEdgeServer;
     List<PopularData> experimentalPopularData;
