@@ -36,6 +36,8 @@ public class SqlUtils {
                 intValue = (int) value;
             } else if (value instanceof Double) {
                 doubleValue = (double) value;
+            }else{
+                continue;
             }
             if(value!=null && intValue+doubleValue>=-900){
                 tableColumn += columnName+", ";

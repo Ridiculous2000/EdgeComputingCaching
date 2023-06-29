@@ -8,9 +8,9 @@ import java.sql.Statement;
 
 public class OtherUtils {
     public static int maxUserNum = 850;
-    public static int maxDataNum = 400;
+    public static int maxDataNum = 600;
     //读取时间段内请求，构建评分矩阵，并写入score.txt
-    public static void buildRequestMatrix(int minTime,int maxTime) {
+    public static void writeRequestMatrix(int minTime, int maxTime) {
         int[][] requestMatrix = new int[maxUserNum][maxDataNum];
         // 建立数据库连接
         try (Connection connection = DBUtils.getConnection()) {

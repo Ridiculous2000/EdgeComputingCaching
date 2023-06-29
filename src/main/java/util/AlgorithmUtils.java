@@ -9,22 +9,44 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static our_algorithm.OurAlgorithm.*;
+import static bean.ExperimentalSetup.*;
 
 public class AlgorithmUtils {
     //根据传入对象的经纬度，返回距离，单位是 m
-    public static HashMap<Integer,HashSet<Integer>> userRequestData = new HashMap<>();
-    public static Map<Integer,Map<Integer,Double>> dataSimilarityMap;
-    public static List<PopularData> experimentalPopularData;
-    public static Map<Integer,double[]> dataVectorMap;
-    public static Map<Integer,Integer> userNearestServer;
-    public static List<User> experimentalUserList;
-    public static List<EdgeServer> experimentalEdgeServer;
-    public static EdgeServerGraph edgeServerGraph;
-    static {
-        ArrayList<Request> allRequest = (ArrayList<Request>) DBUtils.getAllRequestByTime("request",OurAlgorithm.minTimestamp,OurAlgorithm.maxTimestamp);
+    public HashMap<Integer,HashSet<Integer>> userRequestData = new HashMap<>();
+    public Map<Integer,Map<Integer,Double>> dataSimilarityMap;
+    public List<PopularData> experimentalPopularData;
+    public Map<Integer,double[]> dataVectorMap;
+    public Map<Integer,Integer> userNearestServer;
+    public List<User> experimentalUserList;
+    public List<EdgeServer> experimentalEdgeServer;
+    public EdgeServerGraph edgeServerGraph;
+    public int minTimestamp;
+    public int maxTimestamp;
+    public double latencyWeight;
+    public double SimWeight;
+    public double Z;
+    public int maxHop;
+    public double SumQoEWeight;
+    public double FIndexWeight;
+
+
+    public AlgorithmUtils(ExperimentalSetup experimentalSetup) throws IOException {
+        this.minTimestamp = experimentalSetup.getBeginTimestamp();
+        this.maxTimestamp = experimentalSetup.getEndTimestamp();
+        this.latencyWeight = experimentalSetup.getLatencyWeight();
+        this.SimWeight = experimentalSetup.getSimWeight();
+        this.Z = experimentalSetup.getZ();
+        this.maxHop = experimentalSetup.getMaxHop();
+        this.SumQoEWeight = experimentalSetup.getSumQoEWeight();
+        this.FIndexWeight = experimentalSetup.getFIndexWeight();
+        initializeData();
+    }
+
+    public void initializeData() throws IOException {
+        ArrayList<Request> allRequest = (ArrayList<Request>) DBUtils.getAllRequestByTime("request",minTimestamp,maxTimestamp);
         for(Request r:allRequest){
-            if(r.getTimestamp()<OurAlgorithm.minTimestamp||r.getTimestamp()>OurAlgorithm.maxTimestamp){
+            if(r.getTimestamp()<minTimestamp||r.getTimestamp()>maxTimestamp){
                 continue;
             }
             if(!userRequestData.containsKey(r.getPopularDataId())){
@@ -43,7 +65,7 @@ public class AlgorithmUtils {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        dataSimilarityMap = AlgorithmUtils.getDataSimilarityMap(dataVectorMap);
+        dataSimilarityMap = getDataSimilarityMap(dataVectorMap);
 
         experimentalUserList = DBUtils.getAllUser();
         experimentalEdgeServer = DBUtils.getAllEdgeServer();
@@ -51,6 +73,8 @@ public class AlgorithmUtils {
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) experimentalEdgeServer);
         userNearestServer = AlgorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
     }
+
+
 
     public static double calculateDistance(Object obj1,Object obj2){
         double lat1 = 50.0;
@@ -85,7 +109,7 @@ public class AlgorithmUtils {
 
     //获取各个数据之间的相似度，dataId1 - dataId2 - sim.
     // minTime和maxTime写死成调用OurAlgorithmUtils的，因为矩阵分解的结果跟时间序列是绑定的
-    public static Map<Integer, Map<Integer, Double>> getDataSimilarityMap(Map<Integer,double[]> dataVectorMap) {
+    public Map<Integer, Map<Integer, Double>> getDataSimilarityMap(Map<Integer,double[]> dataVectorMap) {
         Map<Integer, Map<Integer, Double>> similarityMap = new HashMap<>();
         for (Map.Entry<Integer, double[]> firstEntry : dataVectorMap.entrySet()) {
             int firstDataId = firstEntry.getKey();
@@ -95,7 +119,7 @@ public class AlgorithmUtils {
                 int lastDataId = lastEntry.getKey();
                 double[] lastDataVector = lastEntry.getValue();
                 // 计算相似度
-                double similarity = calculateSimilarity(firstDataId,lastDataId,firstDataVector, lastDataVector, OurAlgorithm.minTimestamp,OurAlgorithm.maxTimestamp);
+                double similarity = calculateSimilarity(firstDataId,lastDataId,firstDataVector, lastDataVector, minTimestamp,maxTimestamp);
                 if (similarity > similarityThreshold && firstDataId != lastDataId && similarDataMap.size()<maxSimilarityNum) {
                     similarDataMap.put(lastDataId,similarity);
                 }
@@ -106,18 +130,17 @@ public class AlgorithmUtils {
     }
 
     //计算相似度
-    private static double calculateSimilarity(int dataId1,int dataId2,double[] dataVector1, double[] dataVector2,int minTimestamp,int maxTimestamp) {
+    private double calculateSimilarity(int dataId1,int dataId2,double[] dataVector1, double[] dataVector2,int minTimestamp,int maxTimestamp) {
         if(dataId1==dataId2){
             return 1;
         }
-        //得到请求的用户的娇集
+        //得到请求的用户的交集
         HashSet<Integer> userForData1 = userRequestData.get(dataId1);
         HashSet<Integer> userForData2 = userRequestData.get(dataId2);
 //        HashSet<Integer> userForData3 = DBUtils.getUserSetByDataId("request",dataId1,minTimestamp,maxTimestamp);
 //        HashSet<Integer> userForData4 = DBUtils.getUserSetByDataId("request",dataId2,minTimestamp,maxTimestamp);
         HashSet<Integer> intersection = new HashSet<>(userForData1);
         intersection.retainAll(userForData2);
-        // size of jiao!
         int intersectionSize = intersection.size();
         //余弦相似度
         double cosSim = calculateCosSim(dataVector1,dataVector2);
@@ -171,7 +194,7 @@ public class AlgorithmUtils {
         return  userNearestServer;
     }
 
-    public static double calculateQoE(int latency) {
+    public double calculateQoE(int latency) {
         double sim = 1;
         double weightValue = latencyWeight*(latency) + Z;
         return 1 / (1 + Math.exp(-weightValue));
@@ -186,7 +209,7 @@ public class AlgorithmUtils {
         (2) Latency=3,sim=0时候[云端获取] H(x)=3+ -6 +3 = 0 QoE=0.5
         (3) Latency=0,sim=0.5时候[就近获取个一般的] H(x)=0+-3 + 3 = 0 QoE=0.5
      */
-    public static double calculateQoE(int requestDataId, int cacheDataId, int latency) {
+    public double calculateQoE(int requestDataId, int cacheDataId, int latency) {
         double sim = 0;
         if(dataSimilarityMap.get(requestDataId).get(cacheDataId)!=null){
             sim = dataSimilarityMap.get(requestDataId).get(cacheDataId);
@@ -196,7 +219,7 @@ public class AlgorithmUtils {
     }
 
     //根据缓存情况和当前请求，返回总QoE
-    public static double cacheDecisionSumQoE(CachingDecision cachingDecision,ArrayList<Request> allRequest){
+    public double cacheDecisionSumQoE(CachingDecision cachingDecision,ArrayList<Request> allRequest){
         Map<EdgeServer, HashSet<PopularData>> cacheState = cachingDecision.getCachingState();
         double sumQoE = 0;
         ArrayList<Double> rql = new ArrayList<Double>();
@@ -208,8 +231,8 @@ public class AlgorithmUtils {
             for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
                 int lantency = entry.getKey();
                 if(lantency>maxHop){
-                    lantency = maxHop+1;
-                    maxQoE = Math.max(maxQoE,calculateQoE(3));
+                    lantency = maxHop;
+                    maxQoE = Math.max(maxQoE,calculateQoE(lantency));
                     continue;
                 }
                 ArrayList<PopularData>  allPopularData = new ArrayList<>();
@@ -221,13 +244,14 @@ public class AlgorithmUtils {
                 }
             }
             sumQoE += maxQoE;
+            rql.add(maxQoE);
         }
         cachingDecision.setSumQoE(sumQoE);
         return sumQoE;
     }
 
     //根据缓存情况和请求，返回QoE的公平系数
-    public static double cacheDecisionFIndex(CachingDecision cachingDecision,ArrayList<Request> allRequest){
+    public double cacheDecisionFIndex(CachingDecision cachingDecision,ArrayList<Request> allRequest){
         Map<EdgeServer, HashSet<PopularData>> cacheState = cachingDecision.getCachingState();
         ArrayList<Double> userQoE = new ArrayList<>();
         for(Request r:allRequest){
@@ -237,8 +261,8 @@ public class AlgorithmUtils {
             for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
                 int lantency = entry.getKey();
                 if(lantency>maxHop){
-                    lantency = 3;
-                    maxQoE = Math.max(maxQoE,calculateQoE(3));
+                    lantency = maxHop;
+                    maxQoE = Math.max(maxQoE,calculateQoE(lantency));
                     continue;
                 }
                 ArrayList<PopularData>  allPopularData = new ArrayList<>();
@@ -258,14 +282,14 @@ public class AlgorithmUtils {
 
 
     //根据缓存情况和请求，返回QoE的公平系数
-    public static double cacheDecisionFinalValue(CachingDecision cachingDecision,ArrayList<Request> allRequest,double maxSumQoE){
+    public double cacheDecisionFinalValue(CachingDecision cachingDecision,ArrayList<Request> allRequest){
        double FIndex = cacheDecisionFIndex(cachingDecision,allRequest);
        double sumQoE = cacheDecisionSumQoE(cachingDecision,allRequest);
-       return (FIndexWeight*FIndex + SumQoEWeight*(sumQoE/maxSumQoE))/(FIndexWeight+SumQoEWeight);
+       return (FIndexWeight*FIndex + SumQoEWeight*(sumQoE/allRequest.size()))/(FIndexWeight+SumQoEWeight);
     }
 
     //根据存储情况和请求，返回各个用户请求的QoE【目前设置中，一个用户每个时间段只发出一个请求，所以也是用户QoE】
-    public static HashMap<Request,Double> cacheDecisionAllUserQoE(CachingDecision cachingDecision,ArrayList<Request> allRequest){
+    public HashMap<Request,Double> cacheDecisionAllUserQoE(CachingDecision cachingDecision,ArrayList<Request> allRequest){
         Map<EdgeServer, HashSet<PopularData>> cacheState = cachingDecision.getCachingState();
         HashMap<Request,Double> userQoE = new HashMap<>();
         for(Request r:allRequest){
@@ -275,7 +299,7 @@ public class AlgorithmUtils {
             for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
                 int lantency = entry.getKey();
                 if(lantency>maxHop){
-                    lantency = 3;
+                    lantency = maxHop;
                     maxQoE = Math.max(maxQoE,calculateQoE(3));
                     continue;
                 }
@@ -326,5 +350,8 @@ public class AlgorithmUtils {
             return find;
     }
 
+    public static void showAlgorithmResult(String algorithmName,double sumQoE,double FIndex,double finalValue){
+
+    }
 
 }

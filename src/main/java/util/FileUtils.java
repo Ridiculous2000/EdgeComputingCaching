@@ -13,7 +13,7 @@ public class FileUtils {
 
 
     public static int maxUserNum = 850;
-    public static int maxDataNum = 400;
+    public static int maxDataNum = 600;
     public static int dataVectorDimension = 10;
     //读取file，“，”拆分后存入 List<String[]>
     public static List<String[]> readCSV(String filePath) {
