@@ -122,7 +122,7 @@ public class OurAlgorithm {
         for (Map.Entry<Integer,ArrayList<Integer>> entry:userMap.entrySet()){
             int userId = entry.getKey();
             ArrayList<Integer> dataIdList = entry.getValue();
-            
+
         }
 
     }
