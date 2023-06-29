@@ -139,9 +139,12 @@ public class AlgorithmUtils {
         HashSet<Integer> userForData2 = userRequestData.get(dataId2);
 //        HashSet<Integer> userForData3 = DBUtils.getUserSetByDataId("request",dataId1,minTimestamp,maxTimestamp);
 //        HashSet<Integer> userForData4 = DBUtils.getUserSetByDataId("request",dataId2,minTimestamp,maxTimestamp);
-        HashSet<Integer> intersection = new HashSet<>(userForData1);
-        intersection.retainAll(userForData2);
-        int intersectionSize = intersection.size();
+        int intersectionSize = 0;
+        if(userForData1!=null&&userForData2!=null){
+            HashSet<Integer> intersection = new HashSet<>(userForData1);
+            intersection.retainAll(userForData2);
+            intersectionSize = intersection.size();
+        }
         //”‡œ“œ‡À∆∂»
         double cosSim = calculateCosSim(dataVector1,dataVector2);
         double similarity = cosSim;
@@ -178,6 +181,9 @@ public class AlgorithmUtils {
     public static Map<Integer, Integer> getUserNearestServer(List<User> experimentalUserList, List<EdgeServer> experimentalEdgeServer) {
         HashMap<Integer,Integer> userNearestServer = new HashMap<Integer,Integer>();
         for (User user : experimentalUserList) {
+            if(user.getId()==1003){
+                System.out.println("aaa");
+            }
             double minDistance = Double.MAX_VALUE;
             int nearestEdgeServerId = -1;
             for (EdgeServer edgeServer : experimentalEdgeServer) {

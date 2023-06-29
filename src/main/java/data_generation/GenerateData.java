@@ -232,7 +232,7 @@ public class GenerateData {
                         double probability = dataProbEntry.getValue();
                         cumulativeProbability += probability;
                         if (cumulativeProbability >= randomNumber) {
-                            Request r = new Request(userID+timestamp*10000,userID,dataID,timestamp);
+                            Request r = new Request(userID,dataID,timestamp);
                             requestList.add(r);
                             break;
                         }

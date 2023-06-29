@@ -1,8 +1,8 @@
 package control;
 
-import baseLine.BaseLRU;
+import baseLine.BaseLFU;
 import baseLine.BaseRandom;
-import baseLine.BaseUCO;
+import baseLine.BaseGCO;
 import bean.ExperimentalSetup;
 import data_generation.GenerateData;
 import our_algorithm.OurAlgorithm;
@@ -31,7 +31,7 @@ public class main {
         experimentalSetup.setBeginTimestamp(51);
         experimentalSetup.setEndTimestamp(100);
         //基本数据
-        experimentalSetup.setExperimentalData(200);
+        experimentalSetup.setExperimentalData(100);
         experimentalSetup.setExperimentalServer(40);
         experimentalSetup.setExperimentalUser(400);
         //实验设置
@@ -43,8 +43,9 @@ public class main {
         experimentalSetup.setSumQoEWeight(2);
         experimentalSetup.setFIndexWeight(1);
         experimentalSetup.setZ(3);
-
+////
 ////        生成初始化数据
+//
 //        GenerateData generateData = new GenerateData();
 //        //从表中添加实验用户，传入要选择的用户数量
 //        generateData.addExperimentalUser(experimentalSetup.getExperimentalUser());
@@ -66,33 +67,33 @@ public class main {
 //        //矩阵分解是python实现
 //        //写入用户历史，便于预测
 //        FileUtils.writeRequestSequenceToFile("src/AlgorithmicData/user_history.txt");
-//        //读出预测结果，写入预测数据
+////        //读出预测结果，写入预测数据
 //        HashMap<Integer, ArrayList<Integer>> requestByTime = FileUtils.readUserBehaviorFromFile("src/AlgorithmicData/user_history.txt");
-
-
-
-
+//
+////        //本文算法
+////        初始化算法所需内容
+        OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
+//        ourAlgorithm.getHawkesEvents(experimentalSetup.getBeginTimestamp()-1,"src/AlgorithmicData/history_hawkes_events.txt");
+//        ourAlgorithm.getHawkesEvents(experimentalSetup.getEndTimestamp(),"src/AlgorithmicData/all_hawkes_events.txt");
+////
+//
+//        ourAlgorithm.addPredictRequest();
 
 //
-        //本文算法
-//        初始化算法所需内容
-        OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
-        ourAlgorithm.getHawkesEvents(experimentalSetup.getBeginTimestamp()-1,"src/AlgorithmicData/history_hawkes_events.txt");
-        ourAlgorithm.getHawkesEvents(experimentalSetup.getEndTimestamp(),"src/AlgorithmicData/all_hawkes_events.txt");
 //        //1-50是训练数据 , 51以后是实验数据
 //        for(int i=experimentalSetup.getBeginTimestamp();i<=experimentalSetup.getEndTimestamp();i++){
 //            //读取各个服务器-数据对收到的请求时间
 //            ourAlgorithm.findBestDecision(i);
 //        }
 ////
-//        System.out.println("   =================    ");
-//        BaseRandom baseRandom=new BaseRandom();
-//        baseRandom.initializeData(experimentalSetup);
-//        System.out.println("   =================    ");
-//        BaseUCO baseUCO=new BaseUCO();
-//        baseUCO.initializeData(experimentalSetup);
-//        System.out.println("   =================    ");
-//        BaseLRU baseLRU=new BaseLRU();
-//        baseLRU.initializeData(experimentalSetup);
+        System.out.println("   =================    ");
+        BaseRandom baseRandom=new BaseRandom();
+        baseRandom.initializeData(experimentalSetup);
+        System.out.println("   =================    ");
+        BaseGCO baseGCO = new BaseGCO();
+        baseGCO.initializeData(experimentalSetup);
+        System.out.println("   =================    ");
+        BaseLFU baseLFU=new BaseLFU();
+        baseLFU.initializeData(experimentalSetup);
     }
 }

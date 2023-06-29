@@ -17,6 +17,13 @@ public class Request {
 
     public Request(){}
 
+    public Request(int userId, int popularDataId, int timestamp) {
+        this.id = userId+timestamp*10000;
+        this.userId = userId;
+        this.popularDataId = popularDataId;
+        this.timestamp = timestamp;
+    }
+
     public int getUserId() {
         return userId;
     }

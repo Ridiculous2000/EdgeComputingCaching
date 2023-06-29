@@ -4,8 +4,13 @@ import bean.*;
 import util.AlgorithmUtils;
 import util.DBUtils;
 import util.FileUtils;
+import util.SqlUtils;
 
 import java.io.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import static bean.ExperimentalSetup.similarityThreshold;
@@ -52,6 +57,7 @@ public class OurAlgorithm {
         initializeData();
     }
 
+    //根据数据库中请求，统计Hawkes过程
     public void getHawkesEvents(int timestamp,String filePath) {
         ArrayList<Request> historyRequest = (ArrayList<Request>) DBUtils.getAllRequestByTime("request",0,timestamp);
         HashMap<UserDataPair,ArrayList<Integer>> userDataMap = new HashMap<UserDataPair,ArrayList<Integer>>();
@@ -94,7 +100,7 @@ public class OurAlgorithm {
 
     }
 
-
+    //把Hawkes的预测结果写入数据库
     public void addPredictRequest(){
         String filePath = "D:\\JavaProject\\EdgeComputingCaching\\src\\AlgorithmicData\\hawkes_predicte.txt";
         HashMap<Integer, ArrayList<Integer>> userMap = new HashMap<>();
@@ -114,15 +120,36 @@ public class OurAlgorithm {
             e.printStackTrace();
         }
 
-        for (int userId : userMap.keySet()) {
-            ArrayList<Integer> dataIdList = userMap.get(userId);
-            System.out.println("User ID: " + userId + ", Data IDs: " + dataIdList);
-        }
-
+        ArrayList<Request> allPredictRequest = new ArrayList<>();
         for (Map.Entry<Integer,ArrayList<Integer>> entry:userMap.entrySet()){
             int userId = entry.getKey();
             ArrayList<Integer> dataIdList = entry.getValue();
-
+            for(int i=0;i<dataIdList.size();i++){
+                int timestamp = i+1;
+                int dataId = dataIdList.get(i);
+                Request request = new Request(userId,dataId,timestamp);
+                allPredictRequest.add(request);
+            }
+        }
+        String tableName = "predictive_request";
+        Connection connection = null;
+        try {
+            connection = DBUtils.getConnection();
+            Statement stmt = connection.createStatement();
+            String deleteSql = SqlUtils.generateDeleteAllDataSQL(tableName);
+            stmt.executeUpdate(deleteSql);
+            for(Request r:allPredictRequest){
+                String insertRequestSQL = SqlUtils.generateInsertSQL(tableName,r);
+                stmt.executeUpdate(insertRequestSQL);
+            }
+        } catch (SQLException | IllegalAccessException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
 
     }
@@ -447,6 +474,9 @@ public class OurAlgorithm {
         for(Request r:predictiveRequest){
             int dataId = r.getPopularDataId();
             int userId = r.getUserId();
+            if(userNearestServer.get(userId)==null){
+                System.out.println(userId);
+            }
             int serverId = userNearestServer.get(userId);
             HashMap<Integer, ArrayList<EdgeServer>> distanceMap = edgeServerGraph.getDistanceRank().get(serverId);
             ArrayList<EdgeServer> allRelatedServer = new ArrayList<>();
