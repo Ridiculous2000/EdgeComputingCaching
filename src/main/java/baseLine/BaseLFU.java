@@ -30,7 +30,7 @@ public class BaseLFU {
     CachingDecision cachingDecision = new CachingDecision();
     AlgorithmUtils algorithmUtils;
     //  Map<Integer,Map<Integer,Double>> dataSimilarityMap;
-    public void initCachingDecision(int beginTimstamp,int endTimestamp){
+    public AlgorithmResult initCachingDecision(int beginTimstamp,int endTimestamp){
         for(int i=beginTimstamp;i<=endTimestamp;i++){
             Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
             List<Request> requests=DBUtils.getAllRequestByTime("request",i,i);
@@ -50,12 +50,15 @@ public class BaseLFU {
             double finalSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
             double finalFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
             double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests);
+            AlgorithmResult algorithmResult = new AlgorithmResult("LFU",maxSumQoE,finalFIndex,result);
             cachingDecision.setFIndexQoE(finalFIndex);
             cachingDecision.setOptimizationObjective(result);
             System.out.println("Timestamp"+i+" SumQoE: "+finalSumQoE + " FIndex: "+finalFIndex +"FinalValue: "+result);
+            return algorithmResult;
         }
+        return null;
     }
-    public void initializeData(ExperimentalSetup experimentalSetup) throws IOException {
+    public AlgorithmResult initializeData(ExperimentalSetup experimentalSetup) throws IOException {
         algorithmUtils = new AlgorithmUtils(experimentalSetup);
         int beginTimestamp = experimentalSetup.getBeginTimestamp();
         int endTimestamp = experimentalSetup.getEndTimestamp();
@@ -70,7 +73,7 @@ public class BaseLFU {
         initUCOTable(beginTimestamp,endTimestamp);
         keepUCOTable(beginTimestamp,endTimestamp);
         generateEdgeCondition(beginTimestamp,endTimestamp);
-        initCachingDecision(beginTimestamp,endTimestamp);
+        return initCachingDecision(beginTimestamp,endTimestamp);
     }
     //对服务器访问表的初始化
     public void initUCOTable(int beginTimestamp,int endTimestamp){

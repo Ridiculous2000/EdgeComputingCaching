@@ -23,7 +23,7 @@ public class BaseRandom {
     //对于每一个时间戳，都有一个服务器群的存储数据状态
     Map<Integer,List<EdgeServer>> edgeCondition;
     AlgorithmUtils algorithmUtils;
-    public void initializeData(ExperimentalSetup experimentalSetup) throws IOException {
+    public AlgorithmResult initializeData(ExperimentalSetup experimentalSetup) throws IOException {
         int beginTimestamp = experimentalSetup.getBeginTimestamp();
         int endTimestamp = experimentalSetup.getEndTimestamp();
         this.algorithmUtils = new AlgorithmUtils(experimentalSetup);
@@ -34,7 +34,7 @@ public class BaseRandom {
         this.useredge= algorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
-        experiment(beginTimestamp,endTimestamp);
+        return  experiment(beginTimestamp,endTimestamp);
     }
     public void generateEdgeCondition(int beginTimestamp,int endTimestamp){
         this.edgeCondition=new HashMap<Integer, List<EdgeServer>>();
@@ -83,7 +83,7 @@ public class BaseRandom {
         }
         return pd;
     }
-    public void experiment(int beginTimestamp, int endTimestamp){
+    public AlgorithmResult experiment(int beginTimestamp, int endTimestamp){
         generateEdgeCondition(beginTimestamp,endTimestamp);
         //保存第一步的最优解
         for(int i=beginTimestamp;i<=endTimestamp;i++){
@@ -106,9 +106,13 @@ public class BaseRandom {
             double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests);
             cachingDecision.setFIndexQoE(finalFIndex);
             cachingDecision.setOptimizationObjective(result);
+
             System.out.println("Timestamp"+i+" SumQoE: "+finalSumQoE + " FIndex: "+finalFIndex +"FinalValue: "+result);
+            AlgorithmResult algorithmResult = new AlgorithmResult("Random",finalSumQoE,finalFIndex,result);
+            return algorithmResult;
         }
-         }
+        return null;
+    }
     //进行实验返回的是<时间戳，<用户id，时延>>
 //    public Map<Integer,Map<Integer,Integer>> experiment(int beginTimestamp,int endTimestamp)throws IOException{
 //        List<Integer> timePeriod=new ArrayList<Integer>();

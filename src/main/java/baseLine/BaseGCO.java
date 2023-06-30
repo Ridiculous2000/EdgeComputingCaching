@@ -30,7 +30,7 @@ public class BaseGCO {
     CachingDecision cachingDecision = new CachingDecision();
     AlgorithmUtils algorithmUtils;
     //  Map<Integer,Map<Integer,Double>> dataSimilarityMap;
-    public void initCachingDecision(int beginTimstamp,int endTimestamp){
+    public AlgorithmResult initCachingDecision(int beginTimstamp,int endTimestamp){
         for(int i=beginTimstamp;i<=endTimestamp;i++){
             Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
             List<Request> requests=DBUtils.getAllRequestByTime("request",i,i);
@@ -53,9 +53,12 @@ public class BaseGCO {
             cachingDecision.setFIndexQoE(finalFIndex);
             cachingDecision.setOptimizationObjective(result);
             System.out.println("Timestamp"+i+" SumQoE: "+finalSumQoE + " FIndex: "+finalFIndex +"FinalValue: "+result);
+            AlgorithmResult algorithmResult = new AlgorithmResult("BaseGCO",maxSumQoE,finalFIndex,result);
+            return algorithmResult;
         }
+        return null;
     }
-    public void initializeData(ExperimentalSetup experimentalSetup) throws IOException {
+    public AlgorithmResult initializeData(ExperimentalSetup experimentalSetup) throws IOException {
         this.algorithmUtils = new AlgorithmUtils(experimentalSetup);
         this.experimentalUserList = DBUtils.getAllUser();
         this.experimentalEdgeServer = DBUtils.getAllEdgeServer();
@@ -70,7 +73,7 @@ public class BaseGCO {
         initUCOTable(beginTimestamp,endTimestamp);
         keepUCOTable(beginTimestamp,endTimestamp);
         generateEdgeCondition(beginTimestamp,endTimestamp);
-        initCachingDecision(beginTimestamp,endTimestamp);
+        return initCachingDecision(beginTimestamp,endTimestamp);
     }
     //对服务器访问表的初始化
     public void initUCOTable(int beginTimestamp,int endTimestamp){

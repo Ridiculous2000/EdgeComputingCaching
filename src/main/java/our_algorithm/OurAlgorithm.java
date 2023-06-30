@@ -8,7 +8,6 @@ import util.SqlUtils;
 
 import java.io.*;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
@@ -269,9 +268,10 @@ public class OurAlgorithm {
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
         dataSimilarityMap = algorithmUtils.getDataSimilarityMap(dataVectorMap);
         userNearestServer = algorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
+
     }
 
-    public CachingDecision findBestDecision(int timestamp){
+    public AlgorithmResult findBestDecision(int timestamp){
         //初始化数据
         initAlgorithmicTempData(timestamp);
         //拿到这一轮预测的请求
@@ -449,11 +449,14 @@ public class OurAlgorithm {
         }
         double finalSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision,predictiveRequest);
         double finalFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision,predictiveRequest);
-        double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest);
+        double finalValue = algorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest);
         cachingDecision.setFIndexQoE(finalFIndex);
-        cachingDecision.setOptimizationObjective(result);
-        System.out.println("第 " + timestamp + " 时刻最终结果 SumQoE: "+finalSumQoE+" —— " + "FIndex: "+finalFIndex + " —— "+"FinalValue: "+result);
-        return cachingDecision;
+        cachingDecision.setOptimizationObjective(finalValue);
+
+        AlgorithmResult algorithmResult = new AlgorithmResult("ours",finalSumQoE,finalFIndex,finalValue);
+
+        System.out.println("第 " + timestamp + " 时刻最终结果 SumQoE: "+finalSumQoE+" —— " + "FIndex: "+finalFIndex + " —— "+"FinalValue: "+finalValue);
+        return algorithmResult;
     }
 
 
