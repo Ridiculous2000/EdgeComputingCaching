@@ -28,6 +28,7 @@ public class baseLSTMGCO {
     Map<Integer,Map<Integer,Integer>> userlatency;
     //缓存决策
     CachingDecision cachingDecision = new CachingDecision();
+    AlgorithmUtils algorithmUtils;
     //  Map<Integer,Map<Integer,Double>> dataSimilarityMap;
     public void initCachingDecision(int beginTimstamp,int endTimestamp){
         for(int i=beginTimstamp;i<=endTimestamp;i++){
@@ -45,21 +46,24 @@ public class baseLSTMGCO {
                 }
             }
             cachingDecision.setCachingState(cachingResult);
-            double maxSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
-            double finalSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
-            double finalFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
-            double result = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests,400);
+            double maxSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+            double finalSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+            double finalFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
+            double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests);
             cachingDecision.setFIndexQoE(finalFIndex);
             cachingDecision.setOptimizationObjective(result);
             System.out.println("Timestamp"+i+" SumQoE: "+finalSumQoE + " FIndex: "+finalFIndex +"FinalValue: "+result);
         }
     }
-    public void initializeData(int beginTimestamp, int endTimestamp) throws IOException {
+    public void initializeData(ExperimentalSetup experimentalSetup) throws IOException {
+        algorithmUtils = new AlgorithmUtils(experimentalSetup);
+        int beginTimestamp = experimentalSetup.getBeginTimestamp();
+        int endTimestamp = experimentalSetup.getEndTimestamp();
         this.experimentalUserList = DBUtils.getAllUser();
         this.experimentalEdgeServer = DBUtils.getAllEdgeServer();
         this.experimentalPopularData = DBUtils.getAllPopularData();
         //  this.Request = DBUtils.getAllRequestByTime("request",51,80);
-        this.useredge = AlgorithmUtils.getUserNearestServer(experimentalUserList, experimentalEdgeServer);
+        this.useredge = algorithmUtils.getUserNearestServer(experimentalUserList, experimentalEdgeServer);
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
         this.useredge=AlgorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);

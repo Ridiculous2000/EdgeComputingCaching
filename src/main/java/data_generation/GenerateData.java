@@ -13,7 +13,8 @@ import java.util.*;
 
 
 public class GenerateData {
-    //添加实验用户
+
+    //从待选用户表中添加实验用户
     public void addExperimentalUser(int needNum){
         String basicTableName = "basic_user";
         String tableName = "user";
@@ -53,7 +54,7 @@ public class GenerateData {
     }
 
     //添加实验服务器
-    public void addExperimentalServer(int needNum){
+    public void addExperimentalServer(int needNum,int maximumStorageSpace){
         String basicTableName = "basic_server";
         String tableName = "edge_server";
         Connection connection = null;
@@ -72,6 +73,8 @@ public class GenerateData {
                 es.setId(resultSet.getInt("id"));
                 es.setLatitude(resultSet.getDouble("latitude"));
                 es.setLongitude(resultSet.getDouble("longitude"));
+                es.setMaximumStorageSpace(maximumStorageSpace);
+                es.setRemainingStorageSpace(maximumStorageSpace);
                 allServer.add(es);
             }
             int allNum = allServer.size();
@@ -229,7 +232,7 @@ public class GenerateData {
                         double probability = dataProbEntry.getValue();
                         cumulativeProbability += probability;
                         if (cumulativeProbability >= randomNumber) {
-                            Request r = new Request(userID+timestamp*10000,userID,dataID,timestamp);
+                            Request r = new Request(userID,dataID,timestamp);
                             requestList.add(r);
                             break;
                         }

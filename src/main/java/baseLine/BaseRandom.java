@@ -22,16 +22,19 @@ public class BaseRandom {
     CachingDecision cachingDecision = new CachingDecision();
     //对于每一个时间戳，都有一个服务器群的存储数据状态
     Map<Integer,List<EdgeServer>> edgeCondition;
-    public void initializeData(int beginTimestamp,int endTimestamp) throws IOException {
+    AlgorithmUtils algorithmUtils;
+    public void initializeData(ExperimentalSetup experimentalSetup) throws IOException {
+        int beginTimestamp = experimentalSetup.getBeginTimestamp();
+        int endTimestamp = experimentalSetup.getEndTimestamp();
+        this.algorithmUtils = new AlgorithmUtils(experimentalSetup);
         this.experimentalUserList = DBUtils.getAllUser();
         this.experimentalEdgeServer = DBUtils.getAllEdgeServer();
         this.experimentalPopularData = DBUtils.getAllPopularData();
         this.Request = DBUtils.getAllRequestByTime("request",beginTimestamp,endTimestamp);
-        this.useredge= AlgorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
+        this.useredge= algorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
-        generateEdgeCondition(beginTimestamp,endTimestamp);
-        initCachingDecision(beginTimestamp,endTimestamp);
+        experiment(beginTimestamp,endTimestamp);
     }
     public void generateEdgeCondition(int beginTimestamp,int endTimestamp){
         this.edgeCondition=new HashMap<Integer, List<EdgeServer>>();
@@ -80,9 +83,10 @@ public class BaseRandom {
         }
         return pd;
     }
-    public void initCachingDecision(int beginTimstamp,int endTimestamp){
+    public void experiment(int beginTimestamp, int endTimestamp){
+        generateEdgeCondition(beginTimestamp,endTimestamp);
         //保存第一步的最优解
-        for(int i=beginTimstamp;i<=endTimestamp;i++){
+        for(int i=beginTimestamp;i<=endTimestamp;i++){
             Map<EdgeServer, HashSet<PopularData>> cachingResult = new HashMap<>();
             List<Request> requests=DBUtils.getAllRequestByTime("request",i,i);
             List<EdgeServer> servers=this.edgeCondition.get(i);
@@ -96,59 +100,59 @@ public class BaseRandom {
                 }
             }
             cachingDecision.setCachingState(cachingResult);
-            double maxSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
-            double finalSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
-            double finalFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
-            double result = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests,400);
+            double maxSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+            double finalSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+            double finalFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
+            double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests);
             cachingDecision.setFIndexQoE(finalFIndex);
             cachingDecision.setOptimizationObjective(result);
             System.out.println("Timestamp"+i+" SumQoE: "+finalSumQoE + " FIndex: "+finalFIndex +"FinalValue: "+result);
         }
          }
     //进行实验返回的是<时间戳，<用户id，时延>>
-    public Map<Integer,Map<Integer,Integer>> experiment(int beginTimestamp,int endTimestamp)throws IOException{
-        List<Integer> timePeriod=new ArrayList<Integer>();
-        Map<Integer,Map<Integer,Integer>> userLatency=new HashMap<Integer,Map<Integer,Integer>>();
-        for(int i=beginTimestamp;i<=endTimestamp;i++){
-            timePeriod.add(i);
-            List<EdgeServer> edgeServerList=this.edgeCondition.get(i);
-            // edgeServerIdToIndex.put(allEdgeServer.get(i).getId(),i);
-            userLatency.put(i,new HashMap<Integer, Integer>());
-            for(Request rq:this.Request){
-                if(rq.getTimestamp()==i){
-                    int serverId=useredge.get(rq.getUserId());
-                    int distance=0;
-                    int findsid=0;
-                    //edgeServerDistance
-                    //返回为<边缘服务器id，<距离，距这个边缘服务器距离的服务器id列表>>
-                    //Map<Integer,Map<Integer,List<Integer>>>
-                    for(Map.Entry<Integer, List<Integer>> distanceList:edgeServerGraph.getEdgeServerDistance().get(serverId).entrySet()){
-                        distance=distanceList.getKey();
-                        List<Integer> serverlist=distanceList.getValue();
-                        for(Integer sid:serverlist){
-                            //ArrayList<PopularData> cachedDataList
-                            EdgeServer s=findServerById(sid,edgeServerList);
-                            for(PopularData pd:s.getCachedDataList()){
-                                if(pd.getId()==rq.getPopularDataId())
-                                    findsid=sid;
-                                break;
-                            }
-                            if(findsid!=0)
-                                break;
-                        }
-                        if(findsid!=0)
-                            break;
-                    }
-                    if(distance>=edgeServerGraph.getEdgeServerDistance().get(serverId).size()&&findsid==0)
-                        distance=100;
-                    int timeStamp=rq.getTimestamp();
-                    userLatency.get(timeStamp).put(rq.getUserId(),distance);
-                }
-
-            }
-        }
-        return userLatency;
-    }
+//    public Map<Integer,Map<Integer,Integer>> experiment(int beginTimestamp,int endTimestamp)throws IOException{
+//        List<Integer> timePeriod=new ArrayList<Integer>();
+//        Map<Integer,Map<Integer,Integer>> userLatency=new HashMap<Integer,Map<Integer,Integer>>();
+//        for(int i=beginTimestamp;i<=endTimestamp;i++){
+//            timePeriod.add(i);
+//            List<EdgeServer> edgeServerList=this.edgeCondition.get(i);
+//            // edgeServerIdToIndex.put(allEdgeServer.get(i).getId(),i);
+//            userLatency.put(i,new HashMap<Integer, Integer>());
+//            for(Request rq:this.Request){
+//                if(rq.getTimestamp()==i){
+//                    int serverId=useredge.get(rq.getUserId());
+//                    int distance=0;
+//                    int findsid=0;
+//                    //edgeServerDistance
+//                    //返回为<边缘服务器id，<距离，距这个边缘服务器距离的服务器id列表>>
+//                    //Map<Integer,Map<Integer,List<Integer>>>
+//                    for(Map.Entry<Integer, List<Integer>> distanceList:edgeServerGraph.getEdgeServerDistance().get(serverId).entrySet()){
+//                        distance=distanceList.getKey();
+//                        List<Integer> serverlist=distanceList.getValue();
+//                        for(Integer sid:serverlist){
+//                            //ArrayList<PopularData> cachedDataList
+//                            EdgeServer s=findServerById(sid,edgeServerList);
+//                            for(PopularData pd:s.getCachedDataList()){
+//                                if(pd.getId()==rq.getPopularDataId())
+//                                    findsid=sid;
+//                                break;
+//                            }
+//                            if(findsid!=0)
+//                                break;
+//                        }
+//                        if(findsid!=0)
+//                            break;
+//                    }
+//                    if(distance>=edgeServerGraph.getEdgeServerDistance().get(serverId).size()&&findsid==0)
+//                        distance=100;
+//                    int timeStamp=rq.getTimestamp();
+//                    userLatency.get(timeStamp).put(rq.getUserId(),distance);
+//                }
+//
+//            }
+//        }
+//        return userLatency;
+//    }
     public EdgeServer findServerById(int sid,List<EdgeServer> edgeServers){
         EdgeServer es=new EdgeServer();
         for(EdgeServer edgeServer:edgeServers){

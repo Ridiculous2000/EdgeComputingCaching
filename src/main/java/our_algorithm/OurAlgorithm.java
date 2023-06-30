@@ -4,30 +4,31 @@ import bean.*;
 import util.AlgorithmUtils;
 import util.DBUtils;
 import util.FileUtils;
+import util.SqlUtils;
 
-import java.io.IOException;
+import java.io.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
+import static bean.ExperimentalSetup.similarityThreshold;
+
 public class OurAlgorithm {
-    public static int minTimestamp = 0;
-    public static int maxTimestamp = 50;
-    public static int maxStorageSpace = 3;
-    //相似度阈值，大于这个值的再考虑
-    public static double similarityThreshold = 0.5;
-    //最多要考虑的多少个相似数据
-    public static int maxSimilarityNum = 80;
-    //置信度阈值
-    public static int confidenceThreshold = 10;
     //最大跳数
-    public static int maxHop = 2;
+    public int maxHop;
     //参数设置和最大跳数严重相关
-    public static double latencyWeight = -1.5;
-    public static double SimWeight = -4;
+    public double latencyWeight;
+    public double SimWeight;
 //    public static double delayThreshold = 1;
 //    public static double simThreshold = 1;
-    public static double SumQoEWeight = 2;
-    public static double FIndexWeight = 1;
-    public static double Z = 3;
+    public double SumQoEWeight;
+    public double FIndexWeight;
+    public double Z;
+    public int minTimestamp;
+    public int maxTimestamp;
+    public int maxStorageSpace;
     List<User> experimentalUserList;
     List<EdgeServer> experimentalEdgeServer;
     List<PopularData> experimentalPopularData;
@@ -40,7 +41,142 @@ public class OurAlgorithm {
     HashMap<Request,ArrayList<ServerDataPair>> requestToCache = new HashMap();
     HashMap<ServerDataPair,ArrayList<Request>> cacheToRequest = new HashMap<>();
     HashMap<ServerDataPair,Double> remCacheUtility = new HashMap<>();
+    AlgorithmUtils algorithmUtils;
 
+    public OurAlgorithm(ExperimentalSetup experimentalSetup) throws IOException {
+        this.maxHop = experimentalSetup.getMaxHop();
+        this.latencyWeight = experimentalSetup.getLatencyWeight();
+        this.SimWeight = experimentalSetup.getSimWeight();
+        this.SumQoEWeight = experimentalSetup.getSumQoEWeight();
+        this.FIndexWeight = experimentalSetup.getFIndexWeight();
+        this.Z = experimentalSetup.getZ();
+        this.minTimestamp = experimentalSetup.getBeginTimestamp();
+        this.maxTimestamp = experimentalSetup.getEndTimestamp();
+        this.maxStorageSpace = experimentalSetup.getMaxStorageSpace();
+        this.algorithmUtils = new AlgorithmUtils(experimentalSetup);
+        initializeData();
+    }
+
+    //根据数据库中请求，统计Hawkes过程
+    public void getHawkesEvents(int timestamp,String filePath) {
+        ArrayList<Request> historyRequest = (ArrayList<Request>) DBUtils.getAllRequestByTime("request",0,timestamp);
+        HashMap<UserDataPair,ArrayList<Integer>> userDataMap = new HashMap<UserDataPair,ArrayList<Integer>>();
+        //记录各个服务器被请求的情况
+        for(Request r:historyRequest){
+            int dataId = r.getPopularDataId();
+            int userId = r.getUserId();
+            UserDataPair userDataPair = new UserDataPair(userId,dataId);
+            if(userDataMap.get(userDataPair)==null){
+                userDataMap.put(userDataPair,new ArrayList<>());
+            }
+            userDataMap.get(userDataPair).add(r.getTimestamp());
+        }
+
+        // 创建文件路径和文件名
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            for (Map.Entry<UserDataPair, ArrayList<Integer>> entry : userDataMap.entrySet()) {
+                UserDataPair userDataPair = entry.getKey();
+                ArrayList<Integer> dataList = entry.getValue();
+                int userId = userDataPair.userId;
+                int dataId = userDataPair.dataId;
+
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.append(userId).append(" - ").append(dataId).append(":");
+
+                for (Integer data : dataList) {
+                    stringBuilder.append(data).append(",");
+                }
+                if (stringBuilder.charAt(stringBuilder.length() - 1) == ',') {
+                    stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+                }
+
+                String output = stringBuilder.toString();
+                writer.write(output);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    //把Hawkes的预测结果写入数据库
+    public void addPredictRequest(){
+        String filePath = "D:\\JavaProject\\EdgeComputingCaching\\src\\AlgorithmicData\\hawkes_predicte.txt";
+        HashMap<Integer, ArrayList<Integer>> userMap = new HashMap<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(":");
+                int userId = Integer.parseInt(parts[0]);
+                String[] dataIds = parts[1].split(",");
+                ArrayList<Integer> dataIdList = new ArrayList<>();
+                for (String dataId : dataIds) {
+                    dataIdList.add(Integer.parseInt(dataId));
+                }
+                userMap.put(userId, dataIdList);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ArrayList<Request> allPredictRequest = new ArrayList<>();
+        for (Map.Entry<Integer,ArrayList<Integer>> entry:userMap.entrySet()){
+            int userId = entry.getKey();
+            ArrayList<Integer> dataIdList = entry.getValue();
+            for(int i=0;i<dataIdList.size();i++){
+                int timestamp = i+1;
+                int dataId = dataIdList.get(i);
+                Request request = new Request(userId,dataId,timestamp);
+                allPredictRequest.add(request);
+            }
+        }
+        String tableName = "predictive_request";
+        Connection connection = null;
+        try {
+            connection = DBUtils.getConnection();
+            Statement stmt = connection.createStatement();
+            String deleteSql = SqlUtils.generateDeleteAllDataSQL(tableName);
+            stmt.executeUpdate(deleteSql);
+            for(Request r:allPredictRequest){
+                String insertRequestSQL = SqlUtils.generateInsertSQL(tableName,r);
+                stmt.executeUpdate(insertRequestSQL);
+            }
+        } catch (SQLException | IllegalAccessException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+
+    public class UserDataPair{
+        int userId;
+        int dataId;
+
+        public UserDataPair(int userId, int dataId) {
+            this.userId = userId;
+            this.dataId = dataId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof UserDataPair)) return false;
+            UserDataPair that = (UserDataPair) o;
+            return userId == that.userId && dataId == that.dataId;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(userId, dataId);
+        }
+    }
 
     //缓存对
     public class ServerDataPair implements Comparable<ServerDataPair> {
@@ -120,7 +256,7 @@ public class OurAlgorithm {
         this.experimentalUserList = DBUtils.getAllUser();
         this.experimentalEdgeServer = DBUtils.getAllEdgeServer();
         this.experimentalPopularData = DBUtils.getAllPopularData();
-        this.predictiveRequest = DBUtils.getRequestByTime("predictive_request",51,80);
+        this.predictiveRequest = DBUtils.getRequestByTime("predictive_request",minTimestamp,maxTimestamp);
         ArrayList<Integer> dataIdList = new ArrayList<Integer>();
         for(PopularData pd:this.experimentalPopularData){
             dataIdList.add(pd.getId());
@@ -131,8 +267,8 @@ public class OurAlgorithm {
         dataVectorMap = FileUtils.getDataVectorMap("src/AlgorithmicData/data_matrix.txt",dataIdList);
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
-        dataSimilarityMap = AlgorithmUtils.getDataSimilarityMap(dataVectorMap);
-        userNearestServer = AlgorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
+        dataSimilarityMap = algorithmUtils.getDataSimilarityMap(dataVectorMap);
+        userNearestServer = algorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
     }
 
     public CachingDecision findBestDecision(int timestamp){
@@ -181,7 +317,7 @@ public class OurAlgorithm {
                 int cacheServerIndex = serverIdToIndex.get(cache.serverId);
                 int latency = allDistance[nearestServerIndex][cacheServerIndex];
                 // 请求的数据和缓存的数据
-                double utility = AlgorithmUtils.calculateQoE(request.getPopularDataId(),cache.dataId,latency);
+                double utility = algorithmUtils.calculateQoE(request.getPopularDataId(),cache.dataId,latency);
                 requestUtility.put(request, utility);
                 sumUtility += utility;
             }
@@ -193,7 +329,7 @@ public class OurAlgorithm {
             utilityPriorityQueue.add(new ServerDataPair(cache.serverId,cache.dataId,sumUtility));
         }
         //还有空间
-        while (sumAvailableSpace>0){
+        while (sumAvailableSpace>0&&!utilityPriorityQueue.isEmpty()){
             //找到总效用增量最大的缓存对
             ServerDataPair bestServerDataPair = utilityPriorityQueue.poll();
             // 缓存对的情况
@@ -253,9 +389,9 @@ public class OurAlgorithm {
         cachingDecision.setCachingState(cachingResult);
 
 
-        double maxSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision,predictiveRequest);
-        double startFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision,predictiveRequest);
-        HashMap<Request,Double> allUserQoE = AlgorithmUtils.cacheDecisionAllUserQoE(cachingDecision,predictiveRequest);
+        double maxSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision,predictiveRequest);
+        double startFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision,predictiveRequest);
+        HashMap<Request,Double> allUserQoE = algorithmUtils.cacheDecisionAllUserQoE(cachingDecision,predictiveRequest);
         PriorityQueue<UserQoEPair> lowQoEUserQueue = new PriorityQueue<>();
         for(Map.Entry<Request,Double> entry:allUserQoE.entrySet()){
             Request r = entry.getKey();
@@ -279,7 +415,7 @@ public class OurAlgorithm {
             int nearestServerId = userNearestServer.get(userId);
             EdgeServer edgeServer = experimentalEdgeServer.get(edgeServerGraph.getEdgeServerIdToIndex().get(nearestServerId));
             HashSet<PopularData> popularDataSet = cachingDecision.getCachingState().get(edgeServer);
-            double beforeFinalValue = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest,maxSumQoE);
+            double beforeFinalValue = algorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest);
             int minQoEDataId = 0;
             PopularData minQoEData = new PopularData();
             double minDataQoE = 9999;
@@ -303,28 +439,31 @@ public class OurAlgorithm {
             popularDataSet.remove(new PopularData(minQoEDataId));
             popularDataSet.add(toCacheData);
             //计算，看看总值变化没
-            double afterFinalValue = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest,maxSumQoE);
+            double afterFinalValue = algorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest);
             //变差了就再换回来
             if(afterFinalValue<beforeFinalValue){
                 popularDataSet.remove(toCacheData);
                 popularDataSet.add(minQoEData);
-                double nowFinalValue = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest,maxSumQoE);
+                double nowFinalValue = algorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest);
             }
         }
-        double finalSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision,predictiveRequest);
-        double finalFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision,predictiveRequest);
-        double result = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest,maxSumQoE);
+        double finalSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision,predictiveRequest);
+        double finalFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision,predictiveRequest);
+        double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision,predictiveRequest);
         cachingDecision.setFIndexQoE(finalFIndex);
         cachingDecision.setOptimizationObjective(result);
-        System.out.println("最终结果 SumQoE: "+finalSumQoE+" —— " + "FIndex: "+finalFIndex + " —— "+"FinalValue: "+result);
+        System.out.println("第 " + timestamp + " 时刻最终结果 SumQoE: "+finalSumQoE+" —— " + "FIndex: "+finalFIndex + " —— "+"FinalValue: "+result);
         return cachingDecision;
     }
 
 
 
 
+
     //初始化，每个请求会影响多少个缓存对，以及每个缓存对会影响多少个请求
     public void initAlgorithmicTempData(int timestamp){
+        this.requestToCache = new HashMap<>();
+        this.cacheToRequest = new HashMap<>();
         ArrayList<Request> predictiveRequest = this.predictiveRequest.get(timestamp);
         HashMap<Integer, List<EdgeServer>> serverGraph = edgeServerGraph.getServerGraph();
         HashMap<Integer,HashMap<Integer,ArrayList<EdgeServer>>> distanceRank = edgeServerGraph.getDistanceRank();
@@ -335,6 +474,9 @@ public class OurAlgorithm {
         for(Request r:predictiveRequest){
             int dataId = r.getPopularDataId();
             int userId = r.getUserId();
+            if(userNearestServer.get(userId)==null){
+                System.out.println(userId);
+            }
             int serverId = userNearestServer.get(userId);
             HashMap<Integer, ArrayList<EdgeServer>> distanceMap = edgeServerGraph.getDistanceRank().get(serverId);
             ArrayList<EdgeServer> allRelatedServer = new ArrayList<>();
@@ -374,6 +516,7 @@ public class OurAlgorithm {
         }
 
     }
+
 
 }
 

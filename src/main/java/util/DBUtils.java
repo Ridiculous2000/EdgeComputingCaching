@@ -111,7 +111,7 @@ public class DBUtils {
                 es.setLatitude(resultSet.getDouble("latitude"));
                 es.setLongitude(resultSet.getDouble("longitude"));
                 es.setCoveringRadius(resultSet.getInt("covering_radius"));
-                es.setMaximumStorageSpace(resultSet.getInt("maximum_storage_space"));
+                es.setMaximumStorageSpace(resultSet.getInt("max_storage_space"));
                 es.setRemainingStorageSpace(resultSet.getInt("remaining_storage_space"));
                 allEdgeServer.add(es);
             }
