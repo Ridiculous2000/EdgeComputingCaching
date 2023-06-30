@@ -22,14 +22,30 @@ public class baseNSGA {
     //CachingDecision cachingDecision = new CachingDecision();
     //对于每一个时间戳，都有一个服务器群的存储数据状态
     Map<Integer,List<EdgeServer>> edgeCondition;
-    public void initializeData(int beginTimestamp,int endTimestamp) throws IOException {
+    AlgorithmUtils algorithmUtils;
+    //int x,int minsize,int maxspace,int beginTimestamp,int endTimestamp,int iterations
+    int x;
+    int minsize;
+    int maxspace;
+    int itrations;
+    public baseNSGA() throws IOException {
+    }
+    public void initializeData(ExperimentalSetup experimentalSetup) throws IOException {
+        this.algorithmUtils = new AlgorithmUtils(experimentalSetup);
         this.experimentalUserList = DBUtils.getAllUser();
         this.experimentalEdgeServer = DBUtils.getAllEdgeServer();
         this.experimentalPopularData = DBUtils.getAllPopularData();
-        this.Request = DBUtils.getAllRequestByTime("request",beginTimestamp,endTimestamp);
-        this.useredge= AlgorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
+        this.Request = DBUtils.getAllRequestByTime("request",experimentalSetup.getBeginTimestamp(),experimentalSetup.getEndTimestamp());
+        this.useredge= algorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
+        this.x=experimentalSetup.getX();
+        this.minsize=experimentalSetup.getMinsDataSize();
+        this.maxspace=experimentalSetup.getMaxStorageSpace();
+        this.itrations=experimentalSetup.getItrations();
+        this.minsize=experimentalSetup.minsDataSize;
+        this.maxspace=experimentalSetup.getMaxStorageSpace();
+        experiment(this.x,this.minsize,this.maxspace,experimentalSetup.getBeginTimestamp(),experimentalSetup.getEndTimestamp(),this.itrations);
         //generateEdgeCondition(beginTimestamp,endTimestamp);
         //initCachingDecision(beginTimestamp,endTimestamp);
     }
@@ -94,10 +110,10 @@ public class baseNSGA {
     public double calFitness(int timeStamp,CachingDecision cachingDecision)
     {
         List<Request> requests = DBUtils.getAllRequestByTime("request", timeStamp, timeStamp);
-        double maxSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
-        double finalSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
-        double finalFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
-        double result = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests, 400);
+        double maxSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+        double finalSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+        double finalFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
+        double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests);
         cachingDecision.setFIndexQoE(finalFIndex);
         cachingDecision.setOptimizationObjective(result);
       //  System.out.println("Timestamp" + timeStamp + " SumQoE: " + finalSumQoE + " FIndex: " + finalFIndex + "FinalValue: " + result);
@@ -108,10 +124,10 @@ public class baseNSGA {
     {
         List<Request> requests = DBUtils.getAllRequestByTime("request", timeStamp, timeStamp);
 
-        double maxSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
-        double finalSumQoE = AlgorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
-        double finalFIndex = AlgorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
-        double result = AlgorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests, 400);
+        double maxSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+        double finalSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
+        double finalFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
+        double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests);
         cachingDecision.setFIndexQoE(finalFIndex);
         cachingDecision.setOptimizationObjective(result);
         System.out.println("Timestamp" + timeStamp + " SumQoE: " + finalSumQoE + " FIndex: " + finalFIndex + "FinalValue: " + result);
@@ -237,15 +253,12 @@ public class baseNSGA {
     private static int findMaxFitnessIndex(Map<Integer, Double> selectedFitness) {
         // 初始的最大 fitness 值设为负无穷大
         double maxFitness = Double.NEGATIVE_INFINITY;
-
         // 初始的最大 fitness 值对应的键 index
         int maxIndex = 0;
-
         // 遍历 selectedFitness 的键值对
         for (Map.Entry<Integer, Double> entry : selectedFitness.entrySet()) {
             int currentIndex = entry.getKey();
             double currentFitness = entry.getValue();
-
             // 检查当前 fitness 是否大于最大 fitness 值
             if (currentFitness > maxFitness) {
                 maxFitness = currentFitness;
@@ -268,7 +281,7 @@ public class baseNSGA {
                     int randomIndex = random.nextInt(indexList.size());
                     // 从索引列表中获取选中的索引值
                     int selectedIndex = indexList.get(randomIndex);
-                    while(selected[selectedIndex]==true){
+                    while(selected[selectedIndex]){
                         randomIndex = random.nextInt(indexList.size());
                         // 从索引列表中获取选中的索引值
                         selectedIndex = indexList.get(randomIndex);
@@ -293,9 +306,7 @@ public class baseNSGA {
         HashSet<Integer> generated = new HashSet<>();
         while (generated.size() < 2*n) {
             int num = rand.nextInt(length); // 生成随机数
-            if (!generated.contains(num)) {
-                generated.add(num); // 添加到集合
-            }
+            generated.add(num); // 添加到集合
         }
         int index = 0;
         for (int num : generated) {
@@ -348,9 +359,8 @@ public class baseNSGA {
                 }
             }
         }
-        for(int i=generatechildren;i<x;i++){
-            finalNextGeneration[i]=nextgeneration[i];
-        }
+        if (x - generatechildren >= 0)
+            System.arraycopy(nextgeneration, generatechildren, finalNextGeneration, generatechildren, x - generatechildren);
         return finalNextGeneration;
     }
     //判断改变该位置存储的数据情况后是否合理，合理返回true
@@ -372,10 +382,7 @@ public class baseNSGA {
                 currentSize+=tempSize;
             }
         }
-        if(currentSize<=maxspace)
-            return true;
-        else
-            return false;
+        return currentSize <= maxspace;
     }
 
     private int findSizeById(int i) {
@@ -412,16 +419,15 @@ public class baseNSGA {
                 //population=initPopulation(cachingDecision,x,minsize,maxspace);
                 Map<EdgeServer, HashSet<PopularData>> cachingstate = cachingDecision.getCachingState();
                 int index = 0;
-                    Iterator<Map.Entry<EdgeServer, HashSet<PopularData>>> iterator = cachingstate.entrySet().iterator();
-                    while (iterator.hasNext()) {
-                        HashSet<PopularData> pds = iterator.next().getValue();
-                        for(PopularData pd:pds){
-                            population[i][index++]=pd.getId();
-                        }
-                        for(int k=0;k<(n-pds.size());k++){
-                            population[i][index++]=0;
-                        }
+                for (Map.Entry<EdgeServer, HashSet<PopularData>> edgeServerHashSetEntry : cachingstate.entrySet()) {
+                    HashSet<PopularData> pds = edgeServerHashSetEntry.getValue();
+                    for (PopularData pd : pds) {
+                        population[i][index++] = pd.getId();
                     }
+                    for (int k = 0; k < (n - pds.size()); k++) {
+                        population[i][index++] = 0;
+                    }
+                }
             }
             //开始迭代
             for(int numbers=0;numbers<iterations;numbers++){
@@ -430,7 +436,7 @@ public class baseNSGA {
                 allFitness=calAllFitness(population,time,x,minsize,maxspace);
                 //3.选择操作 用选择操作选择适应度较高的个体作为父代，用于生成下一代个体，使用锦标赛算法进行选择
                 //存放已经选择出来作为父代的索引和适应度
-                Map<Integer, Double> selectedIndividual=new HashMap<Integer, Double>();
+                Map<Integer, Double> selectedIndividual;
                 selectedIndividual=tournamentparents(allFitness,tounamentparentssize,parent,x);
                 //4.交叉操作 使用交叉操作对父代个体进行交叉，生成下一代个体。可以采用单点交叉或多点交叉来交换基因片段。
                 //确定生成交叉点的个数
