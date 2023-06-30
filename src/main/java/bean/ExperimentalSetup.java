@@ -18,12 +18,41 @@ public class ExperimentalSetup {
     int maxHop = 2;
     int maxStorageSpace = 3;
     int maxDataSize = 3;
+    public int minsDataSize=1;
     //权重
     double latencyWeight = -1;
     double SimWeight = -6;
     public double FIndexWeight=1;
     public double SumQoEWeight=1;
     public double Z = 3;
+    //遗传算法
+    public int x=100;
+    public int itrations=10;
+
+    public void setMinsDataSize(int minsDataSize) {
+        this.minsDataSize = minsDataSize;
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public void setItrations(int itrations) {
+        this.itrations = itrations;
+    }
+
+
+    public int getMinsDataSize() {
+        return minsDataSize;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getItrations() {
+        return itrations;
+    }
 
     public static double getSimilarityThreshold() {
         return similarityThreshold;

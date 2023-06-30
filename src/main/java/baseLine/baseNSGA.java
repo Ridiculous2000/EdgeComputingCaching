@@ -23,17 +23,29 @@ public class baseNSGA {
     //对于每一个时间戳，都有一个服务器群的存储数据状态
     Map<Integer,List<EdgeServer>> edgeCondition;
     AlgorithmUtils algorithmUtils;
+    //int x,int minsize,int maxspace,int beginTimestamp,int endTimestamp,int iterations
+    int x;
+    int minsize;
+    int maxspace;
+    int itrations;
+    public baseNSGA() throws IOException {
+    }
     public void initializeData(ExperimentalSetup experimentalSetup) throws IOException {
-        algorithmUtils = new AlgorithmUtils(experimentalSetup);
-        int beginTimestamp = experimentalSetup.getBeginTimestamp();
-        int endTimestamp = experimentalSetup.getEndTimestamp();
+        this.algorithmUtils = new AlgorithmUtils(experimentalSetup);
         this.experimentalUserList = DBUtils.getAllUser();
         this.experimentalEdgeServer = DBUtils.getAllEdgeServer();
         this.experimentalPopularData = DBUtils.getAllPopularData();
-        this.Request = DBUtils.getAllRequestByTime("request",beginTimestamp,endTimestamp);
+        this.Request = DBUtils.getAllRequestByTime("request",experimentalSetup.getBeginTimestamp(),experimentalSetup.getEndTimestamp());
         this.useredge= algorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
+        this.x=experimentalSetup.getX();
+        this.minsize=experimentalSetup.getMinsDataSize();
+        this.maxspace=experimentalSetup.getMaxStorageSpace();
+        this.itrations=experimentalSetup.getItrations();
+        this.minsize=experimentalSetup.minsDataSize;
+        this.maxspace=experimentalSetup.getMaxStorageSpace();
+        experiment(this.x,this.minsize,this.maxspace,experimentalSetup.getBeginTimestamp(),experimentalSetup.getEndTimestamp(),this.itrations);
         //generateEdgeCondition(beginTimestamp,endTimestamp);
         //initCachingDecision(beginTimestamp,endTimestamp);
     }
@@ -200,32 +212,40 @@ public class baseNSGA {
         }
         return allFitness;
     }
-    //锦标赛算法选择 输入为一个该种群所有个体索引及适应度值的map，和锦标赛大小,size为每次参加锦标赛的个体数，parent为应选择出作为父代的个体数
+    //锦标赛算法选择 输入为一个该种群所有个体索引及适应度值的map，和锦标赛大小,size为每次参加锦标赛的个体数，parent为应选择出作为父代的个体数 x为种群个体数
     //输出为一个存父代的索引和适应度的数组
-    public Map<Integer,Double> tournamentparents(Map<Integer,Double> allFitness,int size,int parent){
+    public Map<Integer,Double> tournamentparents(Map<Integer,Double> allFitness,int size,int parent,int x){
        // PriorityQueue<Integer> maxHeap = new PriorityQueue<>(Comparator.reverseOrder());
-        Map<Integer,Double> parents=new HashMap<Integer, Double>();
+        boolean[] selected=new boolean[x];
+        for(int i=0;i<x;i++)
+            selected[i]=false;
+        Map<Integer,Double> tourparents=new HashMap<Integer, Double>();
         for(int i=0;i<parent;i++){
             Set<Integer> keySet = allFitness.keySet();
             List<Integer> indexList = new ArrayList<>(keySet);
-            Map<Integer, Double> selectedFitness = selectRandomFitness(allFitness, indexList, size);
+            Map<Integer, Double> selectedFitness = selectRandomFitness(allFitness, indexList, size,selected);
             int maxIndex = findMaxFitnessIndex(selectedFitness);
+            selected[maxIndex]=true;
             double maxfitness=selectedFitness.get(maxIndex);
-            parents.put(maxIndex,maxfitness);
+            tourparents.put(maxIndex,maxfitness);
         }
-        return parents;
+        return tourparents;
     }
-    //从已经选择出来的父代个体中按照锦标赛算法选择两个作为双亲，进行交叉操作，parents为已选择出的父代个体数，size为每次锦标赛选择的个体数
-    public Map<Integer,Double> tournamentparent(Map<Integer,Double> parents,int size){
+    //从已经选择出来的父代个体中按照锦标赛算法选择两个作为双亲，进行交叉操作，parents为已选择出的父代个体数，size为每次锦标赛选择的个体数,x为种群个数
+    public Map<Integer,Double> tournamentparent(Map<Integer,Double> parents,int size,int x){
         // PriorityQueue<Integer> maxHeap = new PriorityQueue<>(Comparator.reverseOrder());
+        boolean[] selected=new boolean[x];
+        for(int i=0;i<x;i++)
+            selected[i]=false;
         Map<Integer,Double> parent=new HashMap<Integer, Double>();
         for(int i=0;i<2;i++){
             Set<Integer> keySet = parents.keySet();
             List<Integer> indexList = new ArrayList<>(keySet);
-            Map<Integer, Double> selectedFitness = selectRandomFitness(parents, indexList, size);
+            Map<Integer, Double> selectedFitness = selectRandomFitness(parents, indexList, size,selected);
             int maxIndex = findMaxFitnessIndex(selectedFitness);
             double maxfitness=selectedFitness.get(maxIndex);
-            parents.put(maxIndex,maxfitness);
+            parent.put(maxIndex,maxfitness);
+            selected[maxIndex]=true;
         }
         return parent;
     }
@@ -233,15 +253,12 @@ public class baseNSGA {
     private static int findMaxFitnessIndex(Map<Integer, Double> selectedFitness) {
         // 初始的最大 fitness 值设为负无穷大
         double maxFitness = Double.NEGATIVE_INFINITY;
-
         // 初始的最大 fitness 值对应的键 index
         int maxIndex = 0;
-
         // 遍历 selectedFitness 的键值对
         for (Map.Entry<Integer, Double> entry : selectedFitness.entrySet()) {
             int currentIndex = entry.getKey();
             double currentFitness = entry.getValue();
-
             // 检查当前 fitness 是否大于最大 fitness 值
             if (currentFitness > maxFitness) {
                 maxFitness = currentFitness;
@@ -251,21 +268,24 @@ public class baseNSGA {
         return maxIndex;
     }
     //从给定的 allFitness 中随机选择 n 个不重复的键值对，并返回一个新的 Map，作为一次锦标赛的参赛个体
-    private static Map<Integer, Double> selectRandomFitness(Map<Integer, Double> allFitness, List<Integer> indexList, int n) {
-        // 创建一个随机数生成器
-        Random random = new Random();
+    private static Map<Integer, Double> selectRandomFitness(Map<Integer, Double> allFitness, List<Integer> indexList, int n,boolean[] selected) {
+                // 创建一个随机数生成器
+                Random random = new Random();
 
-        // 创建一个新的 Map，用于存储选中的键值对
-        Map<Integer, Double> selectedFitness = new HashMap<>();
+                // 创建一个新的 Map，用于存储选中的键值对
+                Map<Integer, Double> selectedFitness = new HashMap<>();
 
-        // 遍历选中的个数 n
-        for (int i = 0; i < n; i++) {
-            // 生成一个随机索引
-            int randomIndex = random.nextInt(indexList.size());
-
-            // 从索引列表中获取选中的索引值
-            int selectedIndex = indexList.get(randomIndex);
-
+                // 遍历选中的个数 n
+                for (int i = 0; i < n; i++) {
+                    // 生成一个随机索引
+                    int randomIndex = random.nextInt(indexList.size());
+                    // 从索引列表中获取选中的索引值
+                    int selectedIndex = indexList.get(randomIndex);
+                    while(selected[selectedIndex]){
+                        randomIndex = random.nextInt(indexList.size());
+                        // 从索引列表中获取选中的索引值
+                        selectedIndex = indexList.get(randomIndex);
+                    }
             // 根据选中的索引值从 allFitness 中获取对应的键值对
             Double selectedValue = allFitness.get(selectedIndex);
 
@@ -286,9 +306,7 @@ public class baseNSGA {
         HashSet<Integer> generated = new HashSet<>();
         while (generated.size() < 2*n) {
             int num = rand.nextInt(length); // 生成随机数
-            if (!generated.contains(num)) {
-                generated.add(num); // 添加到集合
-            }
+            generated.add(num); // 添加到集合
         }
         int index = 0;
         for (int num : generated) {
@@ -327,9 +345,11 @@ public class baseNSGA {
                     }
                     else{
                         // 发生变异，随机选择新值
+                        int count=10;
                         int newValueIndex = random.nextInt(this.experimentalPopularData.size());
-                        while(!reasonable(nextgeneration[i],j,maxspace,minsize,newValueIndex)){
+                        while(!reasonable(nextgeneration[i],j,maxspace,minsize,newValueIndex)&&count<10){
                             newValueIndex=random.nextInt(this.experimentalPopularData.size());
+                            count++;
                         }
                         finalNextGeneration[i][j] = this.experimentalPopularData.get(newValueIndex).getId();
                     }
@@ -339,9 +359,8 @@ public class baseNSGA {
                 }
             }
         }
-        for(int i=generatechildren;i<x;i++){
-            finalNextGeneration[i]=nextgeneration[i];
-        }
+        if (x - generatechildren >= 0)
+            System.arraycopy(nextgeneration, generatechildren, finalNextGeneration, generatechildren, x - generatechildren);
         return finalNextGeneration;
     }
     //判断改变该位置存储的数据情况后是否合理，合理返回true
@@ -354,46 +373,59 @@ public class baseNSGA {
             remainder=n;
         }
         int currentSize=0;
-        for(int i=(j+1-remainder);i<=(j+1-remainder+n);j++){
+        for(int i=(j+1-remainder);i<(j+1-remainder+n);i++){
             if(i==j){
                 currentSize+=dataSize;
             }
             else{
-                currentSize+=this.experimentalPopularData.get(individual[i]).getSize();
+                int tempSize=findSizeById(individual[i]);
+                currentSize+=tempSize;
             }
         }
-        if(currentSize<=maxspace)
-            return true;
-        else
-            return false;
+        return currentSize <= maxspace;
+    }
+
+    private int findSizeById(int i) {
+        int size=0;
+        for(PopularData pd:this.experimentalPopularData){
+            if(pd.getId()==i){
+                size=pd.getSize();
+                break;
+            }
+        }
+        return size;
     }
     //进行实验 x为种群个体数
     // minsize为数据的最小size，maxspace为服务器的最大容量，begintime和endtime为预测的时间戳
     // parent为每次遗传选择的父代数量，tournamentsize为锦标赛大小,crossPointRange确定随机生成2n个交叉点的n的取值范围，为[1,length/crossPointRange]，length是个体数组长度
     //其中crossPointRange>=2 mutationRandom为每个基因位的变异概率,iterations为迭代次数，进行多少轮遗传
-    public void experiment(int x,int minsize,int maxspace,int beginTimestamp,int endTimestamp,int parent,int tounamentparentssize,int tounamentparentsize,int crossPointRange,double mutationRandom,int iterations){
+    public void experiment(int x,int minsize,int maxspace,int beginTimestamp,int endTimestamp,int iterations){
+        int parent=x/3;
+        int tounamentparentssize=x/5;
+        int tounamentparentsize=parent/5;
+        int crossPointRange=6;
+        double mutationRandom=0.1;
         for(int time=beginTimestamp;time<=endTimestamp;time++){
             int n=maxspace/minsize;
-            int length = n * this.experimentalEdgeServer.size()+1;
+            int length = n * this.experimentalEdgeServer.size();
             int[][] population=new int[x][length];
+            List<EdgeServer> tempservers=DBUtils.getAllEdgeServer();
             //1.初始化生成x个个体的种群
             for(int i=0;i<x;i++){
-                List<EdgeServer> servers=DBUtils.getAllEdgeServer();
+                List<EdgeServer> servers=new ArrayList<EdgeServer>();
+                servers=tempservers;
                 servers=randomCaching(servers);
                 CachingDecision cachingDecision=initCachingDecision(servers);
                 //population=initPopulation(cachingDecision,x,minsize,maxspace);
                 Map<EdgeServer, HashSet<PopularData>> cachingstate = cachingDecision.getCachingState();
                 int index = 0;
-                for (int j = 0; j < cachingstate.size(); j++) {
-                    Iterator<Map.Entry<EdgeServer, HashSet<PopularData>>> iterator = cachingstate.entrySet().iterator();
-                    while (iterator.hasNext()) {
-                        HashSet<PopularData> pds = iterator.next().getValue();
-                        for(PopularData pd:pds){
-                            population[i][index++]=pd.getId();
-                        }
-                        for(int k=0;k<(n-pds.size());k++){
-                            population[i][index++]=0;
-                        }
+                for (Map.Entry<EdgeServer, HashSet<PopularData>> edgeServerHashSetEntry : cachingstate.entrySet()) {
+                    HashSet<PopularData> pds = edgeServerHashSetEntry.getValue();
+                    for (PopularData pd : pds) {
+                        population[i][index++] = pd.getId();
+                    }
+                    for (int k = 0; k < (n - pds.size()); k++) {
+                        population[i][index++] = 0;
                     }
                 }
             }
@@ -404,8 +436,8 @@ public class baseNSGA {
                 allFitness=calAllFitness(population,time,x,minsize,maxspace);
                 //3.选择操作 用选择操作选择适应度较高的个体作为父代，用于生成下一代个体，使用锦标赛算法进行选择
                 //存放已经选择出来作为父代的索引和适应度
-                Map<Integer, Double> selectedIndividual=new HashMap<Integer, Double>();
-                selectedIndividual=tournamentparents(allFitness,tounamentparentssize,parent);
+                Map<Integer, Double> selectedIndividual;
+                selectedIndividual=tournamentparents(allFitness,tounamentparentssize,parent,x);
                 //4.交叉操作 使用交叉操作对父代个体进行交叉，生成下一代个体。可以采用单点交叉或多点交叉来交换基因片段。
                 //确定生成交叉点的个数
                 int range=length/crossPointRange;
@@ -419,7 +451,7 @@ public class baseNSGA {
                     //存放交叉点位置的数组
                     int[] randomPoint=randomCrossPoint(length,crossPointNum);
                     //从选出的父代个体中再次使用选择操作，如轮盘赌选择或锦标赛选择，选出两个个体作为交叉操作的父代。
-                    Map<Integer,Double> fathers=tournamentparent(selectedIndividual,tounamentparentsize);
+                    Map<Integer,Double> fathers=tournamentparent(selectedIndividual,tounamentparentsize,x);
                     //这两个父代个体将进行交叉操作，生成两个子代。
                     int[][] twoChild=new int[2][length];
                     twoChild=crossOperation(fathers,population,randomPoint);
