@@ -18,8 +18,6 @@ import java.util.Map;
 
 public class main {
 
-
-
     public static double ZipFS = 1.5;
     static ExperimentalSetup experimentalSetup = new ExperimentalSetup();
     public static void main(String[] args) throws IOException {
@@ -29,14 +27,50 @@ public class main {
 //        initBasicData.insertBasicUser();
 //        initBasicData.insertBasicEdgeServer();
 
-        //生成默认数据
 //        initDefaultSetup();
 //        initDefaultData();
 
-        //运行python代码
+//        initDefaultSetup();
+//        OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
+//        ourAlgorithm.addPredictRequest();
 
-        //运行代码
-        //        runningTime();
+//        for(int i=experimentalSetup.getBeginTimestamp();i<=experimentalSetup.getEndTimestamp();i++){
+//            experimentalSetup.setBeginTimestamp(i);
+//            ourAlgorithm.findBestDecision(i);
+//        }
+
+//        BaseRandom baseRandom = new BaseRandom();
+//        baseRandom.initializeData(experimentalSetup);
+
+//        BaseLFU baseLFU = new BaseLFU();
+//        baseLFU.initializeData(experimentalSetup);
+
+        BaseGCO baseGCO = new BaseGCO();
+        baseGCO.initializeData(experimentalSetup);
+
+//         遗传算法部分
+        baseNSGA baseNSGA=new baseNSGA();
+        baseNSGA.initializeData(experimentalSetup);
+
+
+        //修改最大存储，然后运算
+//        initDefaultSetup();
+//        OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
+//        BaseRandom baseRandom = new BaseRandom();
+//        BaseGCO baseGCO = new BaseGCO();
+//        BaseLFU baseLFU = new BaseLFU();
+//
+//        for(int i=3;i<=8;i++){
+//            experimentalSetup.setMaxStorageSpace(i);
+//            System.out.println("MaxStorageSpace:"+i);
+//            for(int j=experimentalSetup.getBeginTimestamp();j< experimentalSetup.getEndTimestamp();j++){
+//                ourAlgorithm.findBestDecision(j);
+//            }
+//            baseRandom.initializeData(experimentalSetup);
+//            baseGCO.initializeData(experimentalSetup);
+//            baseLFU.initializeData(experimentalSetup);
+//        }
+
 
     }
 
@@ -49,7 +83,7 @@ public class main {
         experimentalSetup.setExperimentalServer(40);
         experimentalSetup.setExperimentalUser(400);
         //实验设置
-        experimentalSetup.setMaxHop(4);
+        experimentalSetup.setMaxHop(3);
         experimentalSetup.setMaxStorageSpace(3);
         //参数设置
         experimentalSetup.setLatencyWeight(-1);
@@ -89,166 +123,145 @@ public class main {
 
     }
 
-    public static void runningTime() throws IOException {
-        //本文算法
-        OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
-        ourAlgorithm.addPredictRequest();
+//    public static void runningTime() throws IOException {
+//        initDefaultSetup();
+//        //本文算法
+//        OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
+//
+//        double FIndexWeight = experimentalSetup.getFIndexWeight();
+//        double SumQoEWeight = experimentalSetup.getSumQoEWeight();
+//        int beginTime  = experimentalSetup.getBeginTimestamp();
+//        int endTime = experimentalSetup.getEndTimestamp();
+
+//        double[] sumQoEList = new double[200];
+//        double[] FIndexList = new double[200];
+//        double[] FinalList = new double[200];
+//        for(int i=experimentalSetup.getBeginTimestamp();i<=experimentalSetup.getEndTimestamp();i++){
+//            AlgorithmResult algorithmResult = ourAlgorithm.findBestDecision(i);
+//            sumQoEList[i] = algorithmResult.getSumQoE();
+//            FIndexList[i] = algorithmResult.getFIndex();
+//            FinalList[i] = algorithmResult.getFinalValue();
+//        }
+
+//        BaseRandom baseRandom=new BaseRandom();
+//        double[] randomSumQoEList = new double[200];
+//        double[] randomFIndexList = new double[200];
+//        double[] randomFinalList = new double[200];
+//        for(int i=experimentalSetup.getBeginTimestamp();i<=experimentalSetup.getEndTimestamp();i++){
+//            experimentalSetup.setBeginTimestamp(i);
+//            AlgorithmResult algorithmResult = baseRandom.initializeData(experimentalSetup);
+//            randomSumQoEList[i] = algorithmResult.getSumQoE();
+//            randomFIndexList[i] = algorithmResult.getFIndex();
+//            randomFinalList[i] = algorithmResult.getFinalValue();
+//        }
 
 
-        double FIndexWeight = experimentalSetup.getFIndexWeight();
-        double SumQoEWeight = experimentalSetup.getSumQoEWeight();
-        int beginTime  = experimentalSetup.getBeginTimestamp();
-        int endTime = experimentalSetup.getEndTimestamp();
-
-        double[] sumQoEList = new double[200];
-        double[] FIndexList = new double[200];
-        double[] FinalList = new double[200];
-        //1-50是训练数据 , 51以后是实验数据
-        for(int i=experimentalSetup.getBeginTimestamp();i<=experimentalSetup.getEndTimestamp();i++){
-            for(int j=0;j<3;j++){
-                AlgorithmResult algorithmResult = ourAlgorithm.findBestDecision(i);
-                sumQoEList[i] = Math.max(sumQoEList[i],algorithmResult.getSumQoE());
-                FIndexList[i] = Math.max(FIndexList[i],algorithmResult.getFIndex());
-            }
-            //读取各个服务器-数据对收到的请求时间
-        }
-        for(int i=0;i<FinalList.length;i++){
-            FinalList[i] =  (FIndexWeight*FIndexList[i] + SumQoEWeight*(sumQoEList[i]/experimentalSetup.getExperimentalUser())) / (FIndexWeight+SumQoEWeight);
-        }
-
-        BaseRandom baseRandom=new BaseRandom();
-        double[] randomSumQoEList = new double[200];
-        double[] randomFIndexList = new double[200];
-        double[] randomFinalList = new double[200];
-        for(int i=experimentalSetup.getBeginTimestamp();i<=experimentalSetup.getEndTimestamp();i++){
-            for(int j=0;j<3;j++){
-                experimentalSetup.setBeginTimestamp(i);
-                AlgorithmResult algorithmResult = baseRandom.initializeData(experimentalSetup);
-                randomSumQoEList[i] = Math.min(randomSumQoEList[i],algorithmResult.getSumQoE());
-                randomFIndexList[i] = Math.min(randomFIndexList[i],algorithmResult.getFIndex());
-            }
-            //读取各个服务器-数据对收到的请求时间
-        }
-        for(int i=0;i<randomFinalList.length;i++){
-            randomFinalList[i] =  (FIndexWeight*randomFIndexList[i] + SumQoEWeight*(randomSumQoEList[i]/experimentalSetup.getExperimentalUser())) / (FIndexWeight+SumQoEWeight);
-        }
+//        BaseGCO baseGCO=new BaseGCO();
+//        double[] GCOSumQoEList = new double[200];
+//        double[] GCOFIndexList = new double[200];
+//        double[] GCOFinalList = new double[200];
+//        for(int i=experimentalSetup.getBeginTimestamp();i<=experimentalSetup.getEndTimestamp();i++){
+//            experimentalSetup.setBeginTimestamp(i);
+//            AlgorithmResult algorithmResult = baseGCO.initializeData(experimentalSetup);
+//            GCOSumQoEList[i] = algorithmResult.getSumQoE();
+//            GCOFIndexList[i] = algorithmResult.getFIndex();
+//            GCOFinalList[i] = algorithmResult.getFinalValue();
+//        }
 
 
-        BaseGCO baseGCO=new BaseGCO();
-        double[] GCOSumQoEList = new double[200];
-        double[] GCOFIndexList = new double[200];
-        double[] GCOFinalList = new double[200];
-        for(int i=experimentalSetup.getBeginTimestamp();i<=experimentalSetup.getEndTimestamp();i++){
-            for(int j=0;j<3;j++){
-                experimentalSetup.setBeginTimestamp(i);
-                AlgorithmResult algorithmResult = baseGCO.initializeData(experimentalSetup);
-                GCOSumQoEList[i] = Math.min(GCOSumQoEList[i],algorithmResult.getSumQoE());
-                GCOFIndexList[i] = Math.min(GCOFIndexList[i],algorithmResult.getFIndex());
-            }
-            //读取各个服务器-数据对收到的请求时间
-        }
-        for(int i=0;i<GCOFinalList.length;i++){
-            GCOFinalList[i] =  (FIndexWeight*GCOFIndexList[i] + SumQoEWeight*(GCOSumQoEList[i]/experimentalSetup.getExperimentalUser())) / (FIndexWeight+SumQoEWeight);
-        }
-
-
-        BaseLFU baseLFU=new BaseLFU();
-        double[] LFUSumQoEList = new double[200];
-        double[] LFUFIndexList = new double[200];
-        double[] LFUFinalList = new double[200];
-        for(int i=experimentalSetup.getBeginTimestamp();i<=experimentalSetup.getEndTimestamp();i++){
-            for(int j=0;j<3;j++){
-                experimentalSetup.setBeginTimestamp(i);
-                AlgorithmResult algorithmResult = baseLFU.initializeData(experimentalSetup);
-                LFUSumQoEList[i] = Math.min(LFUSumQoEList[i],algorithmResult.getSumQoE());
-                LFUFIndexList[i] = Math.min(LFUFIndexList[i],algorithmResult.getFIndex());
-            }
-            //读取各个服务器-数据对收到的请求时间
-        }
-        for(int i=0;i<LFUFinalList.length;i++){
-            LFUFinalList[i] =  (FIndexWeight*LFUFIndexList[i] + SumQoEWeight*(LFUSumQoEList[i]/experimentalSetup.getExperimentalUser())) / (FIndexWeight+SumQoEWeight);
-        }
-
-        String filePath = "src/result/time.txt";
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            StringBuilder ours = new StringBuilder();
-            ours.append("Ours \n");
-            ours.append("SumQoE:");
-            ours.append(joinArrayElements(sumQoEList, beginTime, endTime)+"\n");
-            ours.append("FIndex:");
-            ours.append(joinArrayElements(FIndexList, beginTime, endTime)+"\n");
-            ours.append("FinalValue:");
-            ours.append(joinArrayElements(FinalList, beginTime, endTime)+"\n");
-            writer.write(ours.toString());
-
-            StringBuilder random = new StringBuilder();
-            ours.append("Random \n");
-            ours.append("SumQoE:");
-            ours.append(joinArrayElements(randomSumQoEList, beginTime, endTime)+"\n");
-            ours.append("FIndex:");
-            ours.append(joinArrayElements(randomFIndexList, beginTime, endTime)+"\n");
-            ours.append("FinalValue:");
-            ours.append(joinArrayElements(randomFinalList, beginTime, endTime)+"\n");
-            writer.write(ours.toString());
-
-            StringBuilder GCO = new StringBuilder();
-            ours.append("GCO \n");
-            ours.append("SumQoE:");
-            ours.append(joinArrayElements(GCOSumQoEList, beginTime, endTime)+"\n");
-            ours.append("FIndex:");
-            ours.append(joinArrayElements(GCOFIndexList, beginTime, endTime)+"\n");
-            ours.append("FinalValue:");
-            ours.append(joinArrayElements(GCOFinalList, beginTime, endTime)+"\n");
-            writer.write(ours.toString());
-
-
-            StringBuilder LFU = new StringBuilder();
-            ours.append("LFU \n");
-            ours.append("SumQoE:");
-            ours.append(joinArrayElements(LFUSumQoEList, beginTime, endTime)+"\n");
-            ours.append("FIndex:");
-            ours.append(joinArrayElements(LFUFIndexList, beginTime, endTime)+"\n");
-            ours.append("FinalValue:");
-            ours.append(joinArrayElements(LFUFinalList, beginTime, endTime)+"\n");
-            writer.write(ours.toString());
-
-        }
-    }
-
-
-    public static void runningMaxHop() throws IOException {
-        OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
-        ourAlgorithm.addPredictRequest();
-        BaseRandom baseRandom = new BaseRandom();
-        BaseGCO baseGCO = new BaseGCO();
-        BaseLFU baseLFU = new BaseLFU();
-        String filePath = "src/result/max_hop.txt";
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            StringBuilder showResult = new StringBuilder();
-            for(int i=1;i<5;i++){
-                experimentalSetup.setMaxHop(i);
-
-                showResult.append("MaxHop:"+i+"\n");
-
-                AlgorithmResult ourAlgorithmResult = ourAlgorithm.findBestDecision(experimentalSetup.getBeginTimestamp());
-                showResult.append(ourAlgorithmResult.toString());
-
-                AlgorithmResult randomAlgorithmResult = baseRandom.initializeData(experimentalSetup);
-                showResult.append(randomAlgorithmResult.toString());
-
-                AlgorithmResult GCOAlgorithmResult = baseGCO.initializeData(experimentalSetup);
-                showResult.append(GCOAlgorithmResult.toString());
-
-                AlgorithmResult LFUAlgorithmResult = baseLFU.initializeData(experimentalSetup);
-                showResult.append(LFUAlgorithmResult.toString());
-            }
-
-            writer.write(showResult.toString());
-
-        }
-    }
-
+//        BaseLFU baseLFU=new BaseLFU();
+//        double[] LFUSumQoEList = new double[200];
+//        double[] LFUFIndexList = new double[200];
+//        double[] LFUFinalList = new double[200];
+//        for(int i=experimentalSetup.getBeginTimestamp();i<=experimentalSetup.getEndTimestamp();i++){
+//            experimentalSetup.setBeginTimestamp(i);
+//            AlgorithmResult algorithmResult = baseLFU.initializeData(experimentalSetup);
+//            LFUSumQoEList[i] = algorithmResult.getSumQoE();
+//            LFUFIndexList[i] = algorithmResult.getFIndex();
+//            LFUFinalList[i] = algorithmResult.getFinalValue();
+//        }
+//
+//
+//        String filePath = "src/result/time.txt";
+////
+////        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+////            StringBuilder ours = new StringBuilder();
+////            ours.append("Ours \n");
+////            ours.append("SumQoE:");
+////            ours.append(joinArrayElements(sumQoEList, beginTime, endTime)+"\n");
+////            ours.append("FIndex:");
+////            ours.append(joinArrayElements(FIndexList, beginTime, endTime)+"\n");
+////            ours.append("FinalValue:");
+////            ours.append(joinArrayElements(FinalList, beginTime, endTime)+"\n");
+////            writer.write(ours.toString());
+////
+////            StringBuilder random = new StringBuilder();
+////            ours.append("Random \n");
+////            ours.append("SumQoE:");
+////            ours.append(joinArrayElements(randomSumQoEList, beginTime, endTime)+"\n");
+////            ours.append("FIndex:");
+////            ours.append(joinArrayElements(randomFIndexList, beginTime, endTime)+"\n");
+////            ours.append("FinalValue:");
+////            ours.append(joinArrayElements(randomFinalList, beginTime, endTime)+"\n");
+////            writer.write(ours.toString());
+////
+////            StringBuilder GCO = new StringBuilder();
+////            ours.append("GCO \n");
+////            ours.append("SumQoE:");
+////            ours.append(joinArrayElements(GCOSumQoEList, beginTime, endTime)+"\n");
+////            ours.append("FIndex:");
+////            ours.append(joinArrayElements(GCOFIndexList, beginTime, endTime)+"\n");
+////            ours.append("FinalValue:");
+////            ours.append(joinArrayElements(GCOFinalList, beginTime, endTime)+"\n");
+////            writer.write(ours.toString());
+////
+////
+////            StringBuilder LFU = new StringBuilder();
+////            ours.append("LFU \n");
+////            ours.append("SumQoE:");
+////            ours.append(joinArrayElements(LFUSumQoEList, beginTime, endTime)+"\n");
+////            ours.append("FIndex:");
+////            ours.append(joinArrayElements(LFUFIndexList, beginTime, endTime)+"\n");
+////            ours.append("FinalValue:");
+////            ours.append(joinArrayElements(LFUFinalList, beginTime, endTime)+"\n");
+////            writer.write(ours.toString());
+////
+////        }
+//    }
+//
+//
+//    public static void runningMaxHop() throws IOException {
+//        OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
+//        ourAlgorithm.addPredictRequest();
+//        BaseRandom baseRandom = new BaseRandom();
+//        BaseGCO baseGCO = new BaseGCO();
+//        BaseLFU baseLFU = new BaseLFU();
+//        String filePath = "src/result/max_hop.txt";
+//        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+//            StringBuilder showResult = new StringBuilder();
+//            for(int i=1;i<5;i++){
+//                experimentalSetup.setMaxHop(i);
+//
+//                showResult.append("MaxHop:"+i+"\n");
+//
+//                AlgorithmResult ourAlgorithmResult = ourAlgorithm.findBestDecision(experimentalSetup.getBeginTimestamp());
+//                showResult.append(ourAlgorithmResult.toString());
+//
+////                AlgorithmResult randomAlgorithmResult = baseRandom.initializeData(experimentalSetup);
+////                showResult.append(randomAlgorithmResult.toString());
+//
+//                AlgorithmResult GCOAlgorithmResult = baseGCO.initializeData(experimentalSetup);
+//                showResult.append(GCOAlgorithmResult.toString());
+//
+//                AlgorithmResult LFUAlgorithmResult = baseLFU.initializeData(experimentalSetup);
+//                showResult.append(LFUAlgorithmResult.toString());
+//            }
+//
+//            writer.write(showResult.toString());
+//
+//        }
+//    }
+//
     public static void runningMaxStorage() throws IOException {
         OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
         ourAlgorithm.addPredictRequest();
@@ -256,28 +269,13 @@ public class main {
         BaseGCO baseGCO = new BaseGCO();
         BaseLFU baseLFU = new BaseLFU();
         String filePath = "src/result/max_storage.txt";
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            StringBuilder showResult = new StringBuilder();
-            for(int i=3;i<=8;i++){
-                experimentalSetup.setMaxStorageSpace(i);
+        StringBuilder showResult = new StringBuilder();
+        for(int i=3;i<=8;i++){
+            experimentalSetup.setMaxStorageSpace(i);
+            showResult.append("MaxStorage:"+i+"\n");
 
-                showResult.append("MaxStorage:"+i+"\n");
-
-                AlgorithmResult ourAlgorithmResult = ourAlgorithm.findBestDecision(experimentalSetup.getBeginTimestamp());
-                showResult.append(ourAlgorithmResult.toString());
-
-                AlgorithmResult randomAlgorithmResult = baseRandom.initializeData(experimentalSetup);
-                showResult.append(randomAlgorithmResult.toString());
-
-                AlgorithmResult GCOAlgorithmResult = baseGCO.initializeData(experimentalSetup);
-                showResult.append(GCOAlgorithmResult.toString());
-
-                AlgorithmResult LFUAlgorithmResult = baseLFU.initializeData(experimentalSetup);
-                showResult.append(LFUAlgorithmResult.toString());
-            }
-
-            writer.write(showResult.toString());
-
+            AlgorithmResult ourAlgorithmResult = ourAlgorithm.findBestDecision(experimentalSetup.getBeginTimestamp());
+            showResult.append(ourAlgorithmResult.toString());
         }
     }
 
@@ -305,9 +303,6 @@ public class main {
         BaseLFU baseLFU=new BaseLFU();
         baseLFU.initializeData(experimentalSetup);
 
-        baseNSGA baseNSGA=new baseNSGA();
-        baseNSGA.initializeData(experimentalSetup);
-        baseNSGA.experiment(100,1,3,experimentalSetup.getBeginTimestamp(),experimentalSetup.getEndTimestamp(),40,30,20,6,0.1,10);
 
     }
 
