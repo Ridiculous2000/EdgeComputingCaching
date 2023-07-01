@@ -1,13 +1,12 @@
 package control;
 
+import baseLine.BaseGCO;
 import baseLine.BaseLFU;
 import baseLine.BaseRandom;
-import baseLine.BaseGCO;
+import baseLine.baseNSGA;
 import bean.ExperimentalSetup;
-import data_generation.GenerateData;
 import our_algorithm.OurAlgorithm;
 import util.FileUtils;
-import util.OtherUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,7 +14,16 @@ import java.util.HashMap;
 
 public class main {
 
-
+    public static int BeginTimestamp = 51;
+    public static int EndTimestamp = 80;
+    public static int ExperimentalServer = 40;
+    public static int ExperimentalUser = 400;
+    public static int ExperimentalData = 200;
+    public static int RequestNumForUser = 1;
+    public static int maxHop = 2;
+    public static double latencyWeight = -1.5;
+    public static double SimWeight = -4;
+    
 
     public static double ZipFS = 1.5;
     public static void main(String[] args) throws IOException {
@@ -43,6 +51,8 @@ public class main {
         experimentalSetup.setSumQoEWeight(2);
         experimentalSetup.setFIndexWeight(1);
         experimentalSetup.setZ(3);
+        //遗传算法参数设置
+
 ////
 ////        生成初始化数据
 //
@@ -57,7 +67,7 @@ public class main {
 //        generateData.newUserDataProbability(ZipFS);
 //        //总共的时间序列
 //        ArrayList<Integer> timestampList = new ArrayList<Integer>();
-//        for(int i=1;i<=experimentalSetup.getEndTimestamp();i++){
+//        for(int i=1;i<=80;i++){
 //            timestampList.add(i);
 //        }
 ////        为各个时间段生成数据，目前默认一个用户只在一个时间段发送一个请求
@@ -86,14 +96,17 @@ public class main {
 //            ourAlgorithm.findBestDecision(i);
 //        }
 ////
-        System.out.println("   =================    ");
-        BaseRandom baseRandom=new BaseRandom();
-        baseRandom.initializeData(experimentalSetup);
-        System.out.println("   =================    ");
-        BaseGCO baseGCO = new BaseGCO();
-        baseGCO.initializeData(experimentalSetup);
-        System.out.println("   =================    ");
-        BaseLFU baseLFU=new BaseLFU();
-        baseLFU.initializeData(experimentalSetup);
+//        System.out.println("   =================    ");
+//        BaseRandom baseRandom=new BaseRandom();
+//        baseRandom.initializeData(experimentalSetup);
+//        System.out.println("   =================    ");
+//        BaseGCO baseGCO = new BaseGCO();
+//        baseGCO.initializeData(experimentalSetup);
+//        System.out.println("   =================    ");
+//        BaseLFU baseLFU=new BaseLFU();
+//        baseLFU.initializeData(experimentalSetup);
+//        System.out.println("   =================    ");
+        baseNSGA baseNSGA=new baseNSGA();
+        baseNSGA.initializeData(experimentalSetup);
     }
 }

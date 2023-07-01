@@ -23,6 +23,7 @@ public class baseNSGA {
     //对于每一个时间戳，都有一个服务器群的存储数据状态
     Map<Integer,List<EdgeServer>> edgeCondition;
     AlgorithmUtils algorithmUtils;
+    List<Request> requests ;
     //int x,int minsize,int maxspace,int beginTimestamp,int endTimestamp,int iterations
     int x;
     int minsize;
@@ -45,6 +46,7 @@ public class baseNSGA {
         this.itrations=experimentalSetup.getItrations();
         this.minsize=experimentalSetup.minsDataSize;
         this.maxspace=experimentalSetup.getMaxStorageSpace();
+        this.requests= DBUtils.getAllRequestByTime("request", 1, 100);
         experiment(this.x,this.minsize,this.maxspace,experimentalSetup.getBeginTimestamp(),experimentalSetup.getEndTimestamp(),this.itrations);
         //generateEdgeCondition(beginTimestamp,endTimestamp);
         //initCachingDecision(beginTimestamp,endTimestamp);
@@ -106,10 +108,21 @@ public class baseNSGA {
         cachingDecision.setCachingState(cachingResult);
         return cachingDecision;
     }
+    public List<Request> findRequests(int beginTimestamp,int endTimestamp){
+        List<Request> requests=new ArrayList<Request>();
+        for(Request rq:this.requests){
+            Request temprq=new Request();
+            if(rq.getTimestamp()>=beginTimestamp&&rq.getTimestamp()<=endTimestamp){
+                temprq=rq;
+                requests.add(temprq);
+            }
+        }
+        return requests;
+    }
     //计算适应度 输入为时间戳，存储决策类，输出为该决策的适应度
     public double calFitness(int timeStamp,CachingDecision cachingDecision)
     {
-        List<Request> requests = DBUtils.getAllRequestByTime("request", timeStamp, timeStamp);
+        List<Request> requests = findRequests(timeStamp, timeStamp);
         double maxSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
         double finalSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
         double finalFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
@@ -161,7 +174,8 @@ public class baseNSGA {
     public CachingDecision populationToCachingDecision(int[] individual,int x,int minsize,int maxspace,int edgenum){
         CachingDecision cachingDecision=new CachingDecision();
         Map<EdgeServer, HashSet<PopularData>> cachingstate = new HashMap<EdgeServer, HashSet<PopularData>>();
-        List<EdgeServer> edgeServers=DBUtils.getAllEdgeServer();
+        List<EdgeServer> edgeServers=new ArrayList<EdgeServer>();
+        edgeServers=this.experimentalEdgeServer;
         int index=0;
         int n=maxspace / minsize;
         for(EdgeServer es:edgeServers){
