@@ -328,6 +328,7 @@ public class baseNSGA {
         }
         Arrays.sort(random); // 对数组进行排序
         return random;
+
     }
     //对两个父代个体进行交叉操作，输入为fathers两个父代个体的索引和适应度，population：种群数组，randomPoint为存储交叉点的数组
     private int[][] crossOperation(Map<Integer, Double> fathers, int[][] population, int[] randomPoint) {
@@ -335,6 +336,7 @@ public class baseNSGA {
         int i=0;
         for(Integer index : fathers.keySet()){
             father[i++]=population[index];
+
         }
         for(int j=0;j<randomPoint.length;j++){
             for(int k=randomPoint[j++];k<=randomPoint[j];k++){
