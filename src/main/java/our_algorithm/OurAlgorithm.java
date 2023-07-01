@@ -455,7 +455,7 @@ public class OurAlgorithm {
 
         AlgorithmResult algorithmResult = new AlgorithmResult("ours",finalSumQoE,finalFIndex,finalValue);
 
-        System.out.println("第 " + timestamp + " 时刻最终结果 SumQoE: "+finalSumQoE+" —— " + "FIndex: "+finalFIndex + " —— "+"FinalValue: "+finalValue);
+        System.out.print(algorithmResult);
         return algorithmResult;
     }
 

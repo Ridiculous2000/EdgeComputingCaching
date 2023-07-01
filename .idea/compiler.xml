@@ -10,5 +10,8 @@
         <module name="EdgeComputingCaching" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="EdgeComputingCaching" target="8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

@@ -9,50 +9,26 @@ public class ExperimentalSetup {
     public static int confidenceThreshold = 5;
     //时间设置
     int BeginTimestamp = 51;
-    int EndTimestamp = 80;
+    int EndTimestamp = 100;
     //实验基础数据
     int ExperimentalServer = 40;
     int ExperimentalUser = 400;
-    int ExperimentalData = 200;
+    int ExperimentalData = 100;
     //实验设置
-    int maxHop = 2;
+    int maxHop = 3;
     int maxStorageSpace = 3;
     int maxDataSize = 3;
     public int minsDataSize=1;
     //权重
     double latencyWeight = -1;
     double SimWeight = -6;
-    public double FIndexWeight=1;
+    public double FIndexWeight=2;
     public double SumQoEWeight=1;
     public double Z = 3;
-    //遗传算法
+
+    // 遗传算法
     public int x=100;
     public int itrations=10;
-
-    public void setMinsDataSize(int minsDataSize) {
-        this.minsDataSize = minsDataSize;
-    }
-
-    public void setX(int x) {
-        this.x = x;
-    }
-
-    public void setItrations(int itrations) {
-        this.itrations = itrations;
-    }
-
-
-    public int getMinsDataSize() {
-        return minsDataSize;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getItrations() {
-        return itrations;
-    }
 
     public static double getSimilarityThreshold() {
         return similarityThreshold;
@@ -181,5 +157,29 @@ public class ExperimentalSetup {
 
     public void setMaxDataSize(int maxDataSize) {
         this.maxDataSize = maxDataSize;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public int getItrations() {
+        return itrations;
+    }
+
+    public void setItrations(int itrations) {
+        this.itrations = itrations;
+    }
+
+    public int getMinsDataSize() {
+        return minsDataSize;
+    }
+
+    public void setMinsDataSize(int minsDataSize) {
+        this.minsDataSize = minsDataSize;
     }
 }
