@@ -7,7 +7,7 @@ import util.DBUtils;
 import java.io.IOException;
 import java.util.*;
 
-public class baseNSGA {
+public class BaseNSGA {
     List<User> experimentalUserList;
     List<EdgeServer> experimentalEdgeServer;
     List<PopularData> experimentalPopularData;
@@ -29,7 +29,7 @@ public class baseNSGA {
     int minsize;
     int maxspace;
     int itrations;
-    public baseNSGA() throws IOException {
+    public BaseNSGA() throws IOException {
     }
     public void initializeData(ExperimentalSetup experimentalSetup) throws IOException {
         this.algorithmUtils = new AlgorithmUtils(experimentalSetup);
@@ -174,16 +174,19 @@ public class baseNSGA {
     public CachingDecision populationToCachingDecision(int[] individual,int x,int minsize,int maxspace,int edgenum){
         CachingDecision cachingDecision=new CachingDecision();
         Map<EdgeServer, HashSet<PopularData>> cachingstate = new HashMap<EdgeServer, HashSet<PopularData>>();
-        List<EdgeServer> edgeServers=new ArrayList<EdgeServer>();
-        edgeServers=this.experimentalEdgeServer;
+        List<EdgeServer> edgeServers=DBUtils.getAllEdgeServer();
         int index=0;
         int n=maxspace / minsize;
         for(EdgeServer es:edgeServers){
             HashSet<PopularData> pds=new HashSet<PopularData>();
+
             for(int i=0;i<n;i++){
-                if(individual[i]!=0){
-                    pds.add(findDataById(individual[i]));
+                if(individual[index]!=0){
+                    pds.add(findDataById(individual[index]));
+                    index++;
                 }
+                else if(individual[index]==0)
+                    index++;
             }
             cachingstate.put(es,pds);
         }
@@ -425,11 +428,12 @@ public class baseNSGA {
             int n=maxspace/minsize;
             int length = n * this.experimentalEdgeServer.size();
             int[][] population=new int[x][length];
-            List<EdgeServer> tempservers=DBUtils.getAllEdgeServer();
+           // List<EdgeServer> tempservers=DBUtils.getAllEdgeServer();
             //1.初始化生成x个个体的种群
             for(int i=0;i<x;i++){
-                List<EdgeServer> servers=new ArrayList<EdgeServer>();
-                servers=tempservers;
+              //  List<EdgeServer> servers=new ArrayList<EdgeServer>(tempservers);
+                List<EdgeServer> servers=DBUtils.getAllEdgeServer();
+                //  servers=tempservers;
                 servers=randomCaching(servers);
                 CachingDecision cachingDecision=initCachingDecision(servers);
                 //population=initPopulation(cachingDecision,x,minsize,maxspace);

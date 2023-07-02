@@ -1,20 +1,14 @@
 package control;
 
 import baseLine.*;
-import bean.AlgorithmResult;
 import bean.ExperimentalSetup;
 import data_generation.GenerateData;
 import our_algorithm.OurAlgorithm;
-import util.AlgorithmUtils;
 import util.FileUtils;
 import util.OtherUtils;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 public class main {
 
@@ -45,11 +39,11 @@ public class main {
 //        BaseLFU baseLFU = new BaseLFU();
 //        baseLFU.initializeData(experimentalSetup);
 
-        BaseGCO baseGCO = new BaseGCO();
-        baseGCO.initializeData(experimentalSetup);
+//        BaseGCO baseGCO = new BaseGCO();
+//        baseGCO.initializeData(experimentalSetup);
 
 //         遗传算法部分
-        baseNSGA baseNSGA=new baseNSGA();
+        BaseNSGA baseNSGA=new BaseNSGA();
         baseNSGA.initializeData(experimentalSetup);
 
 
@@ -74,7 +68,7 @@ public class main {
 
     }
 
-    public static void initDefaultSetup(){
+    public static void initDefaultSetup() throws IOException {
         //时间
         experimentalSetup.setBeginTimestamp(51);
         experimentalSetup.setEndTimestamp(100);
@@ -83,7 +77,7 @@ public class main {
         experimentalSetup.setExperimentalServer(40);
         experimentalSetup.setExperimentalUser(400);
         //实验设置
-        experimentalSetup.setMaxHop(3);
+        experimentalSetup.setMaxHop(4);
         experimentalSetup.setMaxStorageSpace(3);
         //参数设置
         experimentalSetup.setLatencyWeight(-1);
@@ -92,9 +86,9 @@ public class main {
         experimentalSetup.setFIndexWeight(1);
         experimentalSetup.setZ(3);
     }
+        //遗传算法参数设置
 
-
-    public static void initDefaultData() throws IOException {
+    public static void initDefaultData() throws IOException{
 //        生成初始化数据
         GenerateData generateData = new GenerateData();
         //从表中添加实验用户，传入要选择的用户数量
@@ -262,49 +256,49 @@ public class main {
 //        }
 //    }
 //
-    public static void runningMaxStorage() throws IOException {
-        OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
-        ourAlgorithm.addPredictRequest();
-        BaseRandom baseRandom = new BaseRandom();
-        BaseGCO baseGCO = new BaseGCO();
-        BaseLFU baseLFU = new BaseLFU();
-        String filePath = "src/result/max_storage.txt";
-        StringBuilder showResult = new StringBuilder();
-        for(int i=3;i<=8;i++){
-            experimentalSetup.setMaxStorageSpace(i);
-            showResult.append("MaxStorage:"+i+"\n");
-
-            AlgorithmResult ourAlgorithmResult = ourAlgorithm.findBestDecision(experimentalSetup.getBeginTimestamp());
-            showResult.append(ourAlgorithmResult.toString());
-        }
-    }
-
-
-    public static String joinArrayElements(double[] array, int startIndex, int endIndex) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = startIndex; i <= endIndex; i++) {
-            stringBuilder.append(array[i]);
-            if (i < endIndex) {
-                stringBuilder.append(",");
-            }
-        }
-        return stringBuilder.toString();
-    }
-
-    public static void runningAlgorithm() throws IOException {
-
-        System.out.println("   =================    ");
-        BaseRandom baseRandom=new BaseRandom();
-        baseRandom.initializeData(experimentalSetup);
-        System.out.println("   =================    ");
-        BaseGCO baseGCO = new BaseGCO();
-        baseGCO.initializeData(experimentalSetup);
-        System.out.println("   =================    ");
-        BaseLFU baseLFU=new BaseLFU();
-        baseLFU.initializeData(experimentalSetup);
+//    public static void runningMaxStorage() throws IOException {
+//        OurAlgorithm ourAlgorithm = new OurAlgorithm(experimentalSetup);
+//        ourAlgorithm.addPredictRequest();
+//        BaseRandom baseRandom = new BaseRandom();
+//        BaseGCO baseGCO = new BaseGCO();
+//        BaseLFU baseLFU = new BaseLFU();
+//        String filePath = "src/result/max_storage.txt";
+//        StringBuilder showResult = new StringBuilder();
+//        for(int i=3;i<=8;i++){
+//            experimentalSetup.setMaxStorageSpace(i);
+//            showResult.append("MaxStorage:"+i+"\n");
+//
+//            AlgorithmResult ourAlgorithmResult = ourAlgorithm.findBestDecision(experimentalSetup.getBeginTimestamp());
+//            showResult.append(ourAlgorithmResult.toString());
+//        }
+//    }
 
 
-    }
+//    public static String joinArrayElements(double[] array, int startIndex, int endIndex) {
+//        StringBuilder stringBuilder = new StringBuilder();
+//        for (int i = startIndex; i <= endIndex; i++) {
+//            stringBuilder.append(array[i]);
+//            if (i < endIndex) {
+//                stringBuilder.append(",");
+//            }
+//        }
+//        return stringBuilder.toString();
+//    }
+//
+//    public static void runningAlgorithm() throws IOException {
+//
+//        System.out.println("   =================    ");
+//        BaseRandom baseRandom=new BaseRandom();
+//        baseRandom.initializeData(experimentalSetup);
+//        System.out.println("   =================    ");
+//        BaseGCO baseGCO = new BaseGCO();
+//        baseGCO.initializeData(experimentalSetup);
+//        System.out.println("   =================    ");
+//        BaseLFU baseLFU=new BaseLFU();
+//        baseLFU.initializeData(experimentalSetup);
+//
+//
+//    }
 
 
 
