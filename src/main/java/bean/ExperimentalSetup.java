@@ -22,13 +22,13 @@ public class ExperimentalSetup {
     //权重
     double latencyWeight = -1;
     double SimWeight = -6;
-    public double FIndexWeight=2;
-    public double SumQoEWeight=1;
+    public double FIndexWeight=1;
+    public double SumQoEWeight=2;
     public double Z = 3;
 
     // 遗传算法
-    public int x=100;
-    public int itrations=10;
+    public int x=15;
+    public int itrations=2;
 
     public static double getSimilarityThreshold() {
         return similarityThreshold;

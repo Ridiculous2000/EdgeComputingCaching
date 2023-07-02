@@ -1,2 +1,5 @@
 
 src/main/java/util/DBUtils.java
+*.class
+*.class
+*.class

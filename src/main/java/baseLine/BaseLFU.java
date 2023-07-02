@@ -71,6 +71,10 @@ public class BaseLFU {
         initUCOTable(beginTimestamp,endTimestamp);
         keepUCOTable(beginTimestamp,endTimestamp);
         generateEdgeCondition(beginTimestamp,endTimestamp);
+        for(EdgeServer edgeServer:experimentalEdgeServer){
+            edgeServer.setMaximumStorageSpace(experimentalSetup.getMaxStorageSpace());
+            edgeServer.setRemainingStorageSpace(experimentalSetup.getMaxStorageSpace());
+        }
         initCachingDecision(beginTimestamp,endTimestamp);
     }
     //对服务器访问表的初始化
@@ -156,6 +160,10 @@ public class BaseLFU {
         this.edgeCondition=new HashMap<Integer, List<EdgeServer>>();
         for(int i=beginTimestamp;i<=endTimestamp;i++){
             List<EdgeServer> edgeServers=DBUtils.getAllEdgeServer();
+            for (EdgeServer edgeServer:edgeServers){
+                edgeServer.setRemainingStorageSpace(experimentalEdgeServer.get(0).getMaximumStorageSpace());
+                edgeServer.setMaximumStorageSpace(experimentalEdgeServer.get(0).getMaximumStorageSpace());
+            }
             //设置一个流行数据表，标记是否被某个边缘服务器放入，不能多次放入
             Map<Integer, Boolean> populardataCondition=new HashMap<Integer, Boolean>();
             for(PopularData popularData:this.experimentalPopularData){

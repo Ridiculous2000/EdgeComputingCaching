@@ -33,6 +33,7 @@ public class OurAlgorithm {
     List<PopularData> experimentalPopularData;
     HashMap<Integer,Integer> dataIdToIndex = new HashMap<>();
     HashMap<Integer,ArrayList<Request>> predictiveRequest;
+    HashMap<Integer,ArrayList<Request>> allUserRequest;
     EdgeServerGraph edgeServerGraph;
     Map<Integer,double[]> dataVectorMap;
     Map<Integer,Map<Integer,Double>> dataSimilarityMap;
@@ -53,6 +54,7 @@ public class OurAlgorithm {
         this.maxTimestamp = experimentalSetup.getEndTimestamp();
         this.maxStorageSpace = experimentalSetup.getMaxStorageSpace();
         this.algorithmUtils = new AlgorithmUtils(experimentalSetup);
+        this.allUserRequest = DBUtils.getRequestByTime("request",0,101);
         initializeData();
     }
 
@@ -268,6 +270,10 @@ public class OurAlgorithm {
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
         dataSimilarityMap = algorithmUtils.getDataSimilarityMap(dataVectorMap);
         userNearestServer = algorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
+        for(EdgeServer edgeServer:experimentalEdgeServer){
+            edgeServer.setMaximumStorageSpace(this.maxStorageSpace);
+            edgeServer.setRemainingStorageSpace(this.maxStorageSpace);
+        }
 
     }
 
@@ -388,10 +394,11 @@ public class OurAlgorithm {
         }
         cachingDecision.setCachingState(cachingResult);
 
+        ArrayList<Request> thisTimeRequest = allUserRequest.get(timestamp);
 
-        double maxSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision,predictiveRequest);
-        double startFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision,predictiveRequest);
-        HashMap<Request,Double> allUserQoE = algorithmUtils.cacheDecisionAllUserQoE(cachingDecision,predictiveRequest);
+        double maxSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision,thisTimeRequest);
+        double startFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision,thisTimeRequest);
+        HashMap<Request,Double> allUserQoE = algorithmUtils.cacheDecisionAllUserQoE(cachingDecision,thisTimeRequest);
         PriorityQueue<UserQoEPair> lowQoEUserQueue = new PriorityQueue<>();
         for(Map.Entry<Request,Double> entry:allUserQoE.entrySet()){
             Request r = entry.getKey();

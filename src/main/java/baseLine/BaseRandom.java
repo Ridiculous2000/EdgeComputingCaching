@@ -34,6 +34,10 @@ public class BaseRandom {
         this.useredge= algorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
         edgeServerGraph = new EdgeServerGraph();
         edgeServerGraph.initGraph((ArrayList<EdgeServer>) this.experimentalEdgeServer);
+        for(EdgeServer edgeServer:experimentalEdgeServer){
+            edgeServer.setMaximumStorageSpace(experimentalSetup.getMaxStorageSpace());
+            edgeServer.setRemainingStorageSpace(experimentalSetup.getMaxStorageSpace());
+        }
         experiment(beginTimestamp,endTimestamp);
     }
     public void generateEdgeCondition(int beginTimestamp,int endTimestamp){
@@ -56,7 +60,7 @@ public class BaseRandom {
             }
             //每次随机找10次数据填入边缘服务器，若无法填满则停止添加
             int count=0;
-            while(server.getRemainingStorageSpace()>=1&&count<5&&experimentalPopularData.size()>0){
+            while(server.getRemainingStorageSpace()>=1&&count<10&&experimentalPopularData.size()>0){
 
                 int randomIndex =random.nextInt(experimentalPopularData.size());
                 PopularData pd=experimentalPopularData.get(randomIndex);

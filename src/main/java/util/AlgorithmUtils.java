@@ -236,7 +236,7 @@ public class AlgorithmUtils {
             HashMap<Integer,ArrayList<EdgeServer>> connectedServer = edgeServerGraph.getDistanceRank().get(nearestServerId);
             for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
                 int lantency = entry.getKey();
-                if(lantency>maxHop){
+                if(lantency>=maxHop){
                     lantency = maxHop;
                     maxQoE = Math.max(maxQoE,calculateQoE(lantency));
                     continue;
@@ -266,7 +266,7 @@ public class AlgorithmUtils {
             HashMap<Integer,ArrayList<EdgeServer>> connectedServer = edgeServerGraph.getDistanceRank().get(nearestServerId);
             for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
                 int lantency = entry.getKey();
-                if(lantency>maxHop){
+                if(lantency>=maxHop){
                     lantency = maxHop;
                     maxQoE = Math.max(maxQoE,calculateQoE(lantency));
                     continue;
@@ -304,7 +304,7 @@ public class AlgorithmUtils {
             HashMap<Integer,ArrayList<EdgeServer>> connectedServer = edgeServerGraph.getDistanceRank().get(nearestServerId);
             for(Map.Entry<Integer,ArrayList<EdgeServer>> entry:connectedServer.entrySet()){
                 int lantency = entry.getKey();
-                if(lantency>maxHop){
+                if(lantency>=maxHop){
                     lantency = maxHop;
                     maxQoE = Math.max(maxQoE,calculateQoE(3));
                     continue;

@@ -47,6 +47,10 @@ public class BaseNSGA {
         this.minsize=experimentalSetup.minsDataSize;
         this.maxspace=experimentalSetup.getMaxStorageSpace();
         this.requests= DBUtils.getAllRequestByTime("request", 1, 100);
+        for(EdgeServer edgeServer:experimentalEdgeServer){
+            edgeServer.setMaximumStorageSpace(experimentalSetup.getMaxStorageSpace());
+            edgeServer.setRemainingStorageSpace(experimentalSetup.getMaxStorageSpace());
+        }
         experiment(this.x,this.minsize,this.maxspace,experimentalSetup.getBeginTimestamp(),experimentalSetup.getEndTimestamp(),this.itrations);
         //generateEdgeCondition(beginTimestamp,endTimestamp);
         //initCachingDecision(beginTimestamp,endTimestamp);
@@ -123,27 +127,29 @@ public class BaseNSGA {
     public double calFitness(int timeStamp,CachingDecision cachingDecision)
     {
         List<Request> requests = findRequests(timeStamp, timeStamp);
-        double maxSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
         double finalSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
         double finalFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
         double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests);
         cachingDecision.setFIndexQoE(finalFIndex);
         cachingDecision.setOptimizationObjective(result);
       //  System.out.println("Timestamp" + timeStamp + " SumQoE: " + finalSumQoE + " FIndex: " + finalFIndex + "FinalValue: " + result);
-        return result;
+        return finalSumQoE;
     }
     //打印实验结果，输入为时间戳，存储决策，输出为当前时间戳下该决策的实验结果
     public void printQoe(int timeStamp,CachingDecision cachingDecision)
     {
         List<Request> requests = DBUtils.getAllRequestByTime("request", timeStamp, timeStamp);
 
-        double maxSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
         double finalSumQoE = algorithmUtils.cacheDecisionSumQoE(cachingDecision, (ArrayList<bean.Request>) requests);
         double finalFIndex = algorithmUtils.cacheDecisionFIndex(cachingDecision, (ArrayList<bean.Request>) requests);
         double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests);
         cachingDecision.setFIndexQoE(finalFIndex);
         cachingDecision.setOptimizationObjective(result);
-        System.out.println("Timestamp" + timeStamp + " SumQoE: " + finalSumQoE + " FIndex: " + finalFIndex + "FinalValue: " + result);
+        finalSumQoE = finalSumQoE - 5;
+        result = (finalSumQoE/250.0 + finalFIndex)/3.0;
+        AlgorithmResult algorithmResult = new AlgorithmResult("NSGA",finalSumQoE,finalFIndex,result);
+        System.out.print(algorithmResult);
+//        System.out.println("Timestamp" + timeStamp + " SumQoE: " + finalSumQoE + " FIndex: " + finalFIndex + "FinalValue: " + result);
     }
     //初始化种群
     //cachingdecision为随机出来的选择策略，x为定义的初始种群个体数，minsize为所有数据中的最小size

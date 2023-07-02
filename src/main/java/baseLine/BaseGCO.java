@@ -52,6 +52,7 @@ public class BaseGCO {
             double result = algorithmUtils.cacheDecisionFinalValue(cachingDecision, (ArrayList<bean.Request>) requests);
             cachingDecision.setFIndexQoE(finalFIndex);
             cachingDecision.setOptimizationObjective(result);
+
             AlgorithmResult algorithmResult = new AlgorithmResult("BaseGCO",maxSumQoE,finalFIndex,result);
             System.out.print(algorithmResult);
         }
@@ -68,6 +69,10 @@ public class BaseGCO {
         this.useredge=algorithmUtils.getUserNearestServer(experimentalUserList,experimentalEdgeServer);
         int beginTimestamp = experimentalSetup.getBeginTimestamp();
         int endTimestamp = experimentalSetup.getEndTimestamp();
+        for(EdgeServer edgeServer:experimentalEdgeServer){
+            edgeServer.setMaximumStorageSpace(experimentalSetup.getMaxStorageSpace());
+            edgeServer.setRemainingStorageSpace(experimentalSetup.getMaxStorageSpace());
+        }
         initUCOTable(beginTimestamp,endTimestamp);
         keepUCOTable(beginTimestamp,endTimestamp);
         generateEdgeCondition(beginTimestamp,endTimestamp);
@@ -198,6 +203,10 @@ public class BaseGCO {
         this.edgeCondition=new HashMap<Integer, List<EdgeServer>>();
         for(int i=beginTimestamp;i<=endTimestamp;i++){
             List<EdgeServer> edgeServers=DBUtils.getAllEdgeServer();
+            for (EdgeServer edgeServer:edgeServers){
+                edgeServer.setRemainingStorageSpace(experimentalEdgeServer.get(0).getMaximumStorageSpace());
+                edgeServer.setMaximumStorageSpace(experimentalEdgeServer.get(0).getMaximumStorageSpace());
+            }
             //设置一个流行数据表，标记是否被某个边缘服务器放入，不能多次放入
             Map<Integer, Boolean> populardataCondition=new HashMap<Integer, Boolean>();
             for(PopularData popularData:this.experimentalPopularData){
